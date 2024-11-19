@@ -66,7 +66,7 @@
             <h3>Correspondances actuelles</h3>
             <ul id="mapping-list"></ul>
         </div>
-       
+      
         <!-- Section de chargement du projet -->
         <div class="Explorer">
             <h2>Charger le projet</h2>
@@ -75,6 +75,10 @@
         <div class="input-group">
             <input type="file" id="input-files" multiple accept=".xml,.fcpxml,.fcpxmld" disabled />
             <label class="file-upload-label" for="input-files">Sélectionner les fichiers XML</label>
+        </div>
+        <div class="file-upload">
+            <label class="file-upload-label-xmp" for="input-xmp">Sélectionner un fichier XMP</label>
+            <input type="file" id="input-xmp" accept=".xmp" disabled>
         </div>
         <!-- Bouton d'extraction du fichier Info.fcpxml pour les fichiers .fcpxmld -->
         <button id="extract-btn" style="display: none;">Extraire le fichier .fcpxml</button>
@@ -112,5 +116,5 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
     <script src="app.js"></script>
-</body>
+    <script src="app-xmp.js"></script>
 </html>
