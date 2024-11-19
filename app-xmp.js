@@ -82,12 +82,5 @@ document.addEventListener('DOMContentLoaded', function () {
         showMessage(`Données extraites avec succès pour le fichier XMP : ${file.name}`, "success");
     }
 
-    // Fonction utilitaire pour afficher un message
-    function showMessage(message, type = 'info') {
-        const messageContainer = document.getElementById('message');
-        messageContainer.innerText = message;
-        messageContainer.className = `message ${type}`;
-    }
 
-    // Ajouter d'autres fonctions spécifiques aux fichiers XMP ici...
 });
