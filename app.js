@@ -3,8 +3,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let projectName = ""; // Nom du projet
     let fcpxmlExtractedContent = ""; // Contenu extrait pour les fichiers .fcpxmld
     let diffusionMappings = {}; // Correspondances de diffusion (ex. Projet -> Nombre de diffusions)
-    let globalOutputData = []; // Variable globale pour regrouper toutes les données (XMP + FCPXML)
-
 
     const fileInput = document.getElementById('input-files');
     const uploadLabel = document.querySelector('.file-upload-label');
@@ -397,117 +395,143 @@ updateMappingList();
             return null;
         }
     }
-   
+  
+    console.log("Vérification des données avant d'afficher l'aperçu :", globalOutputData);
+    console.log("Nom du projet utilisé :", projectName);
+
     //fonction pour afficher le preview
-    function displayPreview(outputData, projectName) {
-        console.log("Affichage de l'aperçu pour le projet :", projectName);
-        console.log("Contenu des données de sortie :", outputData);
-    
-        const previewContainer = document.getElementById('preview');
-        previewContainer.innerHTML = ''; // Réinitialiser le contenu précédent
-    
-        const projectDetails = diffusionMappings[projectName];
-        if (!projectDetails) {
-            console.error("Détails du projet non trouvés pour :", projectName);
-            showMessage("Erreur : détails du projet non trouvés.", "error");
+// Fonction pour afficher le preview
+function displayPreview(globalOutputData, projectName) {
+    console.log("Affichage de l'aperçu pour le projet :", projectName);
+    console.log("Contenu des données de sortie :", globalOutputData);
+
+    const previewContainer = document.getElementById('preview');
+    previewContainer.innerHTML = ''; // Réinitialiser le contenu précédent
+
+    // Vérification des détails du projet
+    const projectDetails = diffusionMappings[projectName];
+    if (!projectDetails) {
+        console.error("Détails du projet non trouvés pour :", projectName);
+        showMessage("Erreur : détails du projet non trouvés.", "error");
+        return;
+    }
+
+    // Vérification des données globalOutputData
+    if (!globalOutputData || globalOutputData.length === 0) {
+        console.warn("Aucune donnée disponible dans globalOutputData pour l'aperçu.");
+        showMessage("Aucune donnée trouvée pour afficher l'aperçu.", "warning");
+        return;
+    }
+
+    // Ajout du titre
+    const title = document.createElement('h3');
+    title.innerText = `Projet : ${projectName}`;
+    previewContainer.appendChild(title);
+
+    // Ajout des informations du projet
+    const projectInfo = document.createElement('div');
+    projectInfo.innerHTML = `
+        <p><strong>Journaliste/Producteur :</strong> ${projectDetails.producerName || 'Non spécifié'}</p>
+        <p><strong>Emission :</strong> ${projectDetails.showName || 'Non spécifiée'}</p>
+        <p><strong>Date :</strong> ${projectDetails.projectDate || 'Non spécifiée'}</p>
+        <p><strong>Diffusions :</strong> ${projectDetails.broadcastCount || 'Non spécifié'}</p>
+    `;
+    previewContainer.appendChild(projectInfo);
+
+    // Création du tableau
+    const table = document.createElement('table');
+    table.classList.add('preview-table');
+
+    // En-têtes du tableau
+    const headerRow = table.insertRow();
+    const headers = [
+        'Journaliste / Producteur', 'Emission', 'Sujet', 'Date', 'Titre', 'Artiste', 
+        'Album', 'Label', 'Durée', 'Diffusions', 'Actions'
+    ];
+    headers.forEach(header => {
+        const th = document.createElement('th');
+        th.innerText = header;
+        headerRow.appendChild(th);
+    });
+
+    // Remplissage des lignes du tableau avec globalOutputData
+    globalOutputData.forEach((item, itemIndex) => {
+        if (!item.data || !Array.isArray(item.data)) {
+            console.error("Structure inattendue dans globalOutputData pour l'élément :", item);
             return;
         }
-    
-        const title = document.createElement('h3');
-        title.innerText = `Projet : ${projectName}`;
-        previewContainer.appendChild(title);
-    
-        const projectInfo = document.createElement('div');
-        projectInfo.innerHTML = `
-            <p><strong>Journaliste/Producteur :</strong> ${projectDetails.producerName || 'Non spécifié'}</p>
-            <p><strong>Emission :</strong> ${projectDetails.showName || 'Non spécifiée'}</p>
-            <p><strong>Date :</strong> ${projectDetails.projectDate || 'Non spécifiée'}</p>
-            <p><strong>Diffusions :</strong> ${projectDetails.broadcastCount || 'Non spécifié'}</p>
-        `;
-        previewContainer.appendChild(projectInfo);
-    
-        const table = document.createElement('table');
-        table.classList.add('preview-table');
-    
-        const headerRow = table.insertRow();
-        const headers = [
-            'Journaliste / Producteur', 'Emission', 'Sujet', 'Date', 'Titre', 'Artiste', 
-            'Album', 'Label', 'Durée', 'Diffusions', 'Actions'
-        ];
-        headers.forEach(header => {
-            const th = document.createElement('th');
-            th.innerText = header;
-            headerRow.appendChild(th);
-        });
-    
-        outputData.forEach((item, itemIndex) => {
-            item.data.forEach((row, rowIndex) => {
-                const dataRow = table.insertRow();
-                const cells = [
-                    projectDetails.producerName || '',
-                    projectDetails.showName || '',
-                    projectName,
-                    projectDetails.projectDate || '',
-                    row.trackName || '',
-                    row.artists || '',
-                    row.album || '',
-                    row.label || '',
-                    row.duration || '',
-                    projectDetails.broadcastCount || ''
-                ];
-    
-                cells.forEach((cellData, cellIndex) => {
-                    const cell = dataRow.insertCell();
-                    cell.contentEditable = true;
-                    cell.innerText = cellData;
-    
-                    cell.addEventListener('input', function () {
-                        switch (cellIndex) {
-                            case 0: projectDetails.producerName = cell.innerText; break;
-                            case 1: projectDetails.showName = cell.innerText; break;
-                            case 3: projectDetails.projectDate = cell.innerText; break;
-                            case 4: row.trackName = cell.innerText; break;
-                            case 5: row.artists = cell.innerText; break;
-                            case 6: row.album = cell.innerText; break;
-                            case 7: row.label = cell.innerText; break;
-                            case 8: row.duration = cell.innerText; break;
-                            case 9: projectDetails.broadcastCount = parseInt(cell.innerText) || 0; break;
-                        }
-                    });
+
+        item.data.forEach((row, rowIndex) => {
+            const dataRow = table.insertRow();
+            const cells = [
+                projectDetails.producerName || '',
+                projectDetails.showName || '',
+                projectName,
+                projectDetails.projectDate || '',
+                row.trackName || '',
+                row.artists || '',
+                row.album || '',
+                row.label || '',
+                row.duration || '',
+                projectDetails.broadcastCount || ''
+            ];
+
+            cells.forEach((cellData, cellIndex) => {
+                const cell = dataRow.insertCell();
+                cell.contentEditable = true; // Permettre l'édition des cellules
+                cell.innerText = cellData;
+
+                // Mettre à jour les données en temps réel lors de l'édition
+                cell.addEventListener('input', function () {
+                    switch (cellIndex) {
+                        case 0: projectDetails.producerName = cell.innerText; break;
+                        case 1: projectDetails.showName = cell.innerText; break;
+                        case 3: projectDetails.projectDate = cell.innerText; break;
+                        case 4: row.trackName = cell.innerText; break;
+                        case 5: row.artists = cell.innerText; break;
+                        case 6: row.album = cell.innerText; break;
+                        case 7: row.label = cell.innerText; break;
+                        case 8: row.duration = cell.innerText; break;
+                        case 9: projectDetails.broadcastCount = parseInt(cell.innerText) || 0; break;
+                    }
                 });
-    
-                const actionCell = dataRow.insertCell();
-                const deleteBtn = document.createElement('button');
-                deleteBtn.innerText = 'Supprimer';
-                deleteBtn.classList.add('delete-btn');
-                deleteBtn.addEventListener('click', () => {
-                    table.deleteRow(dataRow.rowIndex);
-                    outputData[itemIndex].data.splice(rowIndex, 1);
-                });
-                actionCell.appendChild(deleteBtn);
             });
+
+            // Ajouter une action de suppression pour chaque ligne
+            const actionCell = dataRow.insertCell();
+            const deleteBtn = document.createElement('button');
+            deleteBtn.innerText = 'Supprimer';
+            deleteBtn.classList.add('delete-btn');
+            deleteBtn.addEventListener('click', () => {
+                table.deleteRow(dataRow.rowIndex);
+                globalOutputData[itemIndex].data.splice(rowIndex, 1);
+            });
+            actionCell.appendChild(deleteBtn);
         });
-    
-        previewContainer.appendChild(table);
-    
-        const addRowBtn = document.createElement('button');
-        addRowBtn.innerText = 'Ajouter une ligne';
-        addRowBtn.classList.add('add-row-btn');
-        addRowBtn.addEventListener('click', () => {
-            const newRowData = {
-                trackName: '', artists: '', album: '', label: '', duration: ''
-            };
-            if (outputData.length > 0) {
-                outputData[0].data.push(newRowData);
-                const newRow = table.insertRow();
-                addRowToTable(newRow, newRowData, projectDetails);
-            } else {
-                console.warn("Impossible d'ajouter une ligne : outputData est vide");
-            }
-        });
-    
-        previewContainer.appendChild(addRowBtn);
-    }
+    });
+
+    // Ajout du tableau au conteneur
+    previewContainer.appendChild(table);
+
+    // Bouton pour ajouter une ligne
+    const addRowBtn = document.createElement('button');
+    addRowBtn.innerText = 'Ajouter une ligne';
+    addRowBtn.classList.add('add-row-btn');
+    addRowBtn.addEventListener('click', () => {
+        const newRowData = {
+            trackName: '', artists: '', album: '', label: '', duration: ''
+        };
+        if (globalOutputData.length > 0) {
+            globalOutputData[0].data.push(newRowData);
+            const newRow = table.insertRow();
+            addRowToTable(newRow, newRowData, projectDetails);
+        } else {
+            console.warn("Impossible d'ajouter une ligne : globalOutputData est vide");
+        }
+    });
+
+    previewContainer.appendChild(addRowBtn);
+}
      
     // Fonction pour ajouter une nouvelle ligne au tableau d'aperçu
     function addRowToTable(table, rowData, subjectData) {
@@ -561,17 +585,17 @@ updateMappingList();
     // Log supplémentaire dans la gestion du bouton de génération d'aperçu
     document.getElementById('process-btn').addEventListener('click', async function () {
         console.log("Bouton de génération d'aperçu cliqué");
-    
+
+         // Vérifier si globalOutputData est vide
+        if (globalOutputData.length === 0) {
+            console.warn("Aucune donnée disponible pour générer l'aperçu.");
+            showMessage("Aucune donnée à afficher. Vérifiez les fichiers sélectionnés.", "warning");
+            return;
+        }
         // Synchroniser globalOutputData avec outputData
         outputData = [...globalOutputData]; // Copie toutes les données globales dans outputData
         console.log("Données combinées avant génération d'aperçu :", outputData);
-    
-         // Vérifier si globalOutputData est vide
-        if (globalOutputData.length === 0) {
-            console.warn("Aucune donnée XMP disponible dans globalOutputData.");
-            showMessage("Aucune donnée extraite des fichiers XMP. Veuillez vérifier vos fichiers.", "warning");
-            return; // Stopper l'exécution si aucune donnée n'est disponible
-        }
+
         const fileInput = document.getElementById('input-files');
     
         for (let i = 0; i < fileInput.files.length; i++) {
@@ -598,6 +622,8 @@ updateMappingList();
                 };
                 reader.readAsText(file);
             }
+            console.log("Données combinées avant génération d'aperçu :", globalOutputData);
+            displayPreview(globalOutputData, projectName);
         }
     
         // Attendre que tout soit traité avant d'afficher l'aperçu
