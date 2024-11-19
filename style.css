@@ -1,0 +1,553 @@
+/* Style de base */
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #f4f7f9;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+
+/* En-tête principal */
+.header-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #6FA1B6;
+    height: 200px;
+    margin-bottom: 40px;
+    border-radius: 6px;
+    box-shadow: 0px 8px 17px 1px rgba(0, 0, 0, 0.3);
+}
+
+.logo {
+    height: 150px;
+    max-width: 100%;
+}
+
+/* Conteneur principal */
+.container {
+    max-width: 1300px;
+    margin: 20px auto;
+    padding: 30px;
+    background: #fff;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+}
+
+/* Titre de section */
+.Explorer h2 {
+    background-color: #6FA1B6;
+    color: #fff;
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    font-weight: 700;
+}
+
+#input-files {
+    display: none;
+}
+
+/* Bouton de chargement de fichier */
+.file-upload-label {
+    padding: 10px 20px;
+    background-color: #696969;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    display: inline-block;
+    transition: background-color 0.3s;
+    margin-bottom: 120px;
+}
+
+.file-upload-label:hover {
+    background-color: #218838; /* Couleur après extraction */
+    color:#fff;
+}
+
+.file-upload-label.uploaded {
+    background-color: #28a745;
+}
+
+/* Style de base pour le <select> */
+select {
+    appearance: none; /* Retirer le style natif par défaut */
+    -webkit-appearance: none; /* Pour Safari */
+    -moz-appearance: none; /* Pour Firefox */
+    
+    background-color: #f0f0f0; /* Couleur de fond neutre */
+    color: #333; /* Couleur de texte */
+    padding: 10px 15px; /* Espacement interne */
+    font-size: 16px; /* Taille du texte */
+    border: 1px solid #ccc; /* Bordure fine et sobre */
+    border-radius: 5px; /* Coins arrondis */
+    transition: border-color 0.3s ease, background-color 0.3s ease; /* Transition douce */
+    width: 100%; /* Prendre toute la largeur disponible */
+    box-sizing: border-box; /* Inclure le padding dans la largeur */
+    cursor: pointer;
+}
+
+/* Effet au survol */
+select:hover {
+    border-color: #888; /* Changer la couleur de la bordure */
+}
+
+/* Effet au focus (lorsqu'on clique dessus) */
+select:focus {
+    outline: none; /* Retirer le contour par défaut */
+    border-color: #6FA1B6; /* Changer la couleur de la bordure au focus */
+    background-color: #fff; /* Fond blanc quand le select est activé */
+}
+
+/* Icône de flèche personnalisée pour le <select> */
+select::after {
+    content: '\25BC'; /* Unicode pour une flèche vers le bas */
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none; /* Laisser la flèche cliquable */
+}
+
+/* Pour un conteneur relatif afin que la flèche soit bien placée */
+.select-container {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+}
+
+.select-container select {
+    width: calc(100% - 30px); /* Ajuster la largeur pour laisser de la place à la flèche */
+    padding-right: 30px; /* Espace pour la flèche */
+}
+
+/* Pour rendre le design plus cohérent avec les navigateurs modernes */
+select:disabled {
+    background-color: #e0e0e0;
+    cursor: not-allowed;
+}
+
+/* Style de base pour input[type="date"] */
+input[type="date"] {
+    appearance: none; /* Retirer le style natif par défaut */
+    -webkit-appearance: none; /* Pour Safari */
+    -moz-appearance: none; /* Pour Firefox */
+
+    background-color: #f0f0f0; /* Fond neutre */
+    color: #333; /* Couleur du texte */
+    padding: 6px 10px; /* Espacement interne */
+    font-size: 14px; /* Taille du texte */
+    border: 1px solid #ccc; /* Bordure fine */
+    border-radius: 5px; /* Coins arrondis */
+    transition: border-color 0.3s ease, background-color 0.3s ease; /* Transition douce */
+    width: 10%; /* Prendre toute la largeur disponible */
+    box-sizing: border-box; /* Inclure le padding dans la largeur */
+    cursor: pointer;
+}
+
+/* Icône de calendrier personnalisé pour les navigateurs qui supportent le pseudo-élément ::after */
+input[type="date"]::-webkit-calendar-picker-indicator {
+    background-color: transparent;
+    cursor: pointer;
+}
+
+/* Effet au survol */
+input[type="date"]:hover {
+    border-color: #888; /* Changer la couleur de la bordure */
+}
+
+/* Effet au focus (lorsqu'on clique dessus) */
+input[type="date"]:focus {
+    outline: none; /* Retirer le contour par défaut */
+    border-color: #6FA1B6; /* Couleur de la bordure au focus */
+    background-color: #fff; /* Fond blanc lorsque le champ est activé */
+}
+
+/* Pour les navigateurs qui ne supportent pas ::after, fallback pour l'icône du calendrier */
+input[type="date"]::after {
+    content: '\1F4C5'; /* Icône Unicode représentant un calendrier */
+    position: relative;
+    right: -5px;
+    top: 8px;
+    transform: translateY(-50%);
+    pointer-events: none; /* Pour éviter que l'utilisateur clique sur l'icône */
+}
+
+/* Désactiver le champ input */
+input[type="date"]:disabled {
+    background-color: #e0e0e0;
+    cursor: not-allowed;
+}
+
+
+/* Boutons */
+button {
+    padding: 12px 25px;
+    border: none;
+    border-radius: 4px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 10px;
+}
+
+#process-btn {
+    background-color: #ddd; /* Couleur initiale */
+    color: black;
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#process-btn.actif {
+    background-color: #218838; /* Couleur après extraction */
+    color:#fff;
+}
+
+#process-btn:hover {
+    background-color: #218838; /* Couleur après extraction */
+    color:#fff;
+}
+
+#download-btn {
+    background-color: #28a745;
+    color: white;
+    display: none;
+}
+
+/* Style pour afficher le bouton d'extraction */
+#extract-btn {
+    background-color: #6FA1B6;
+    color: white;
+    padding: 12px 25px;
+    font-size: 15px;
+    font-weight: bold;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: inline-block;
+    transition: background-color 0.3s;
+    margin-top: 10px;
+}
+
+#extract-btn:hover {
+    background-color: #5a90a0;
+}
+
+#extract-btn.succes {
+    background-color: #28a745; /* Couleur verte après succès */
+}
+
+#extract-btn.succes::after {
+    content: " Contenu Extrait";
+}
+
+/* Message d'information */
+#message {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #e8f5e9;
+    border: 1px solid #c8e6c9;
+    border-radius: 5px;
+    color: #2e7d32;
+    font-weight: bold;
+    font-size: 16px;
+    font-family: Arial, sans-serif;
+    text-align: left;  /* Ajout pour aligner le texte à gauche */
+}
+
+
+.message.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.message.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.preview-container {
+    margin-top: 25px;
+}
+
+.preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    table-layout: fixed;
+}
+
+.preview-table th, .preview-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border: 1px solid #ddd;
+    white-space: normal; /* Permettre le retour à la ligne si nécessaire */
+    word-wrap: break-word; /* Retour à la ligne automatique pour éviter le débordement */
+}
+
+.preview-table th {
+    background-color: #6FA1B6;
+    color: #fff;
+    font-weight: bold;
+}
+
+#mapping-section {
+    margin-top: 20px;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+#mapping-section h3 {
+    margin-bottom: 10px;
+    color: #6FA1B6;
+    font-weight: 700;
+    font-size: 18px;
+}
+
+#mapping-section select {
+    margin-right: 10px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    width: 200px;
+}
+
+#mapping-section input[type="text"],
+#mapping-section input[type="number"] {
+    margin-right: 10px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    width: 180px;
+}
+
+#add-mapping-btn {
+    background-color: #6FA1B6;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 8px 16px;
+    font-weight: bold;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+#add-mapping-btn:hover {
+    background-color: #5a90a0;
+}
+
+/* Liste des correspondances */
+#mapping-list {
+    list-style-type: none;
+    padding: 0;
+    margin-top: 20px;
+}
+
+#mapping-list > li {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    background-color: #e8f5e9;
+    border: 1px solid #c8e6c9;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    padding: 10px;
+}
+
+.mapping-details {
+    list-style-type: disc;
+    padding-left: 20px;
+    margin: 0;
+}
+
+.mapping-details li {
+    color: #2e7d32;
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.delete-btn {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+    align-self: flex-start;
+}
+
+.delete-btn:hover {
+    background-color: #c0392b;
+}
+
+
+/* Bouton Ajouter */
+.add-row-btn {
+    background-color: #28a745; /* Vert */
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 10px;
+    transition: background-color 0.3s;
+}
+
+.add-row-btn:hover {
+    background-color: #218838;
+}
+
+/* Bouton Supprimer */
+.delete-btn {
+    background-color: #e74c3c; /* Rouge */
+    color: white;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.delete-btn:hover {
+    background-color: #c0392b;
+}
+
+#to-report-btn {
+    background-color: #eb9a4a; /* Couleur de fond initiale */
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#to-report-btn:hover {
+    background-color: #45a049; /* Couleur de fond au survol */
+}
+
+
+#message {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #e8f5e9;
+    border: 1px solid #c8e6c9;
+    border-radius: 5px;
+    color: #2e7d32;
+    font-weight: bold;
+    font-size: 16px;
+    font-family: Arial, sans-serif;
+}
+
+/* Style pour la barre de progression */
+.progress-container {
+    width: 100%;
+    background-color: #f3f3f3;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-top: 20px;
+    height: 25px; /* Ajuster la hauteur de la barre */
+    display: block;
+}
+
+.progress-bar {
+    height: 100%;
+    width: 0%;
+    background-color: #4CAF50; /* Couleur verte pour la progression */
+    border-radius: 5px;
+    text-align: center;
+    line-height: 25px;
+    color: white;
+    transition: width 0.3s; /* Transition fluide */
+}
+
+button.acceder-rapport {
+    background-color: #4CAF50; /* couleur de fond initiale */
+    color: white; /* couleur de texte initiale */
+    padding: 10px 20px; /* marges internes */
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button.acceder-rapport:hover {
+    background-color: #45a049; /* couleur de fond au survol */
+}
+
+button.acceder-rapport {
+    -webkit-transition: background-color 0.3s ease;
+    transition: background-color 0.3s ease;
+}
+
+button.extraire-fichier {
+    background-color: #f0ad4e; /* couleur initiale */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button.extraire-fichier.succes {
+    background-color: #28a745; /* couleur verte après succès */
+}
+
+button.extraire-fichier.succes::after {
+    content: " Contenu Extrait";
+}
+
+button.generer-apercu {
+    background-color: #ddd; /* couleur initiale */
+    color: black;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button.generer-apercu.actif {
+    background-color: #6FA1B6; /* couleur après extraction */
+}
+
+
+/* Footer */
+footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    padding: 20px;
+    background-color: #6FA1B6;
+    color: #ffffff;
+    font-size: 14px;
+    text-align: center;
+    margin-top: 50px;
+}
+
+.footer {
+    height: 40px;
+}
+
+footer img {
+    max-height: 100%;
+    margin-right: 10px;
+}
+
+footer span {
+    font-weight: 500;
+}

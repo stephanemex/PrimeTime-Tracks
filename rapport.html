@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rapport - PrimeTime Tracks</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <div class="header-container">
+            <img src="Logo_PrimeTimeTracks.png" alt="Logo PrimeTime Tracks" class="logo">
+        </div>
+    </header>
+
+    <div class="container">
+
+        <!-- Section de sélection du répertoire -->
+        <div class="Explorer">
+            <h2>Sélectionner le répertoire des rapports Excel</h2>
+        </div>
+
+        <!-- Bouton dynamique pour le chargement du répertoire -->
+        <div class="input-group">
+            <input type="file" id="directory-input" webkitdirectory directory multiple style="display:none;" />
+            <label class="file-upload-label" id="directory-upload-label" for="directory-input">Choisir un répertoire</label>
+        </div>
+
+        <!-- Message d'information juste en dessous -->
+        <div id="message" class="message" style="display: none;"></div> 
+
+        <!-- Bouton pour lancer le traitement (invisible jusqu'à la sélection des fichiers) -->
+        <button id="process-btn" style="display: none;">Lancer le traitement</button>
+
+        <!-- Barre de progression -->
+        <div class="progress-container" style="display: none;">
+            <div id="progress-bar" class="progress-bar"></div>
+        </div>
+        
+        <!-- Section d'aperçu des rapports combinés -->
+        <div class="Explorer">
+            <h2>Aperçu du rapport combiné</h2>
+        </div>
+        <div id="preview" class="preview-container"></div>
+        <button id="back-to-index-btn">Revenir à l'index</button>
+
+        <script>
+            document.getElementById('back-to-index-btn').addEventListener('click', function() {
+                window.location.href = 'index.html';
+            });
+        </script>
+
+    </div>
+
+    <footer>
+        <img class="footer" src="Logo_PrimeTimeTracks.png">
+        <span>Développé par Stéphane Mex. Tous droits réservés © 2024</span>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="rapport.js"></script>
+</body>
+</html>
