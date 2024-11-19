@@ -73,10 +73,12 @@ document.addEventListener('DOMContentLoaded', function () {
         console.log("Données extraites pour le fichier XMP :", data);
 
         // Ajouter au tableau global de données
-        outputDataXMP.push({
+        globalOutputData.push({
+            type: 'XMP', // Identifie le type de fichier
             file: file.name,
             data: data
         });
+        
 
         console.log("OutputData XMP mis à jour :", outputDataXMP);
         showMessage(`Données extraites avec succès pour le fichier XMP : ${file.name}`, "success");

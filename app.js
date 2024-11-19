@@ -3,7 +3,9 @@ document.addEventListener('DOMContentLoaded', function() {
     let projectName = ""; // Nom du projet
     let fcpxmlExtractedContent = ""; // Contenu extrait pour les fichiers .fcpxmld
     let diffusionMappings = {}; // Correspondances de diffusion (ex. Projet -> Nombre de diffusions)
-    
+    let globalOutputData = []; // Variable globale pour regrouper toutes les données (XMP + FCPXML)
+
+
     const fileInput = document.getElementById('input-files');
     const uploadLabel = document.querySelector('.file-upload-label');
     const extractBtn = document.getElementById('extract-btn');
@@ -341,10 +343,12 @@ updateMappingList();
         console.log("Nombre total de pistes extraites :", data.length);
     
         if (data.length > 0) {
-            outputData.push({
+            globalOutputData.push({
+                type: 'FCPXML',
                 file: fileName,
                 data: data
             });
+            
             console.log("Données ajoutées à outputData :", outputData);
         } else {
             console.warn("Aucune donnée valide extraite du fichier.");
@@ -599,7 +603,7 @@ updateMappingList();
             }
         }, 1000);
     });
-    
+   
     // Ajouter un écouteur pour le bouton "Télécharger le fichier Excel"
     document.getElementById('download-btn').addEventListener('click', function () {
         console.log("Bouton de téléchargement cliqué");
@@ -608,6 +612,8 @@ updateMappingList();
         generateExcel(outputData, projectName);
     });
     
+    console.log("Contenu combiné dans globalOutputData :", globalOutputData);
+
     //Fonction pour générer le fichier Excel
     async function generateExcel(outputData, projectName) {
         console.log("Début de generateExcel avec :", { outputData, projectName });
@@ -671,13 +677,16 @@ updateMappingList();
         columnWidths.forEach((width, index) => worksheet.getColumn(index + 1).width = width);
     
         // Remplir les données
-        outputData.forEach(item => {
+        globalOutputData.forEach(item => {
+            const type = item.type; // XMP ou FCPXML
+            const fileName = item.file;
+        
             item.data.forEach(row => {
                 const dataRow = worksheet.addRow([
                     projectDetails.producerName || '',
                     projectDetails.showName || '',
-                    projectName,
-                    projectDetails.projectDate || '',
+                    type, // Indique si c'est XMP ou FCPXML
+                    fileName, // Nom du fichier
                     row.trackName || '',
                     row.artists || '',
                     row.album || '',
@@ -689,6 +698,7 @@ updateMappingList();
             });
             worksheet.addRow([]); // Ajouter une ligne vide après chaque élément
         });
+        
     
         const contactRow = worksheet.addRow(['Pour toute question, veuillez contacter : email@exemple.com']);
         worksheet.mergeCells(`A${contactRow.number}:J${contactRow.number}`);
