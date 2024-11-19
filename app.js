@@ -562,8 +562,11 @@ updateMappingList();
     document.getElementById('process-btn').addEventListener('click', async function () {
         console.log("Bouton de génération d'aperçu cliqué");
     
+        // Combiner les données de globalOutputData et outputData
+        outputData = [...globalOutputData]; // Copie les données globales (XMP) dans outputData
+        console.log("Données combinées avant génération d'aperçu :", outputData);
+    
         const fileInput = document.getElementById('input-files');
-        outputData = []; // Réinitialiser outputData
     
         for (let i = 0; i < fileInput.files.length; i++) {
             const file = fileInput.files[i];
@@ -603,7 +606,7 @@ updateMappingList();
             }
         }, 1000);
     });
-   
+    
     // Ajouter un écouteur pour le bouton "Télécharger le fichier Excel"
     document.getElementById('download-btn').addEventListener('click', function () {
         console.log("Bouton de téléchargement cliqué");
