@@ -56,13 +56,19 @@ document.addEventListener('DOMContentLoaded', function () {
             const filePath = item.getElementsByTagName("stRef:filePath")[0]?.textContent || "Inconnu";
             const fromPart = item.getElementsByTagName("stRef:fromPart")[0]?.textContent || "time:0";
             const toPart = item.getElementsByTagName("stRef:toPart")[0]?.textContent || "time:0";
-
+        
             console.log("Données brutes extraites :", { filePath, fromPart, toPart });
-
+        
+            // Vérification de filePath
+            if (filePath === "Inconnu") {
+                console.warn("Chemin de fichier inconnu trouvé dans le fichier XMP :", item);
+                continue; // Ignore cet élément et passe au suivant
+            }
+        
             // Utiliser les fonctions existantes ou créer de nouvelles pour traiter les données
             const parsedFile = parseFileName(filePath); // Découpe le nom du fichier
             const timecodes = parseTimecodes(fromPart, toPart); // Calcule les timecodes et la durée
-
+        
             // Ajouter les données à la liste
             data.push({
                 ...parsedFile, // Label, Album, Piste, Titre, Artiste
@@ -79,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function () {
             data: data
         });
         
-
+        console.log("Données ajoutées à globalOutputData :", globalOutputData);
         console.log("OutputData XMP mis à jour :", outputDataXMP);
         showMessage(`Données extraites avec succès pour le fichier XMP : ${file.name}`, "success");
     }
