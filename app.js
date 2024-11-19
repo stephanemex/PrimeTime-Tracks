@@ -562,10 +562,16 @@ updateMappingList();
     document.getElementById('process-btn').addEventListener('click', async function () {
         console.log("Bouton de génération d'aperçu cliqué");
     
-        // Combiner les données de globalOutputData et outputData
-        outputData = [...globalOutputData]; // Copie les données globales (XMP) dans outputData
+        // Synchroniser globalOutputData avec outputData
+        outputData = [...globalOutputData]; // Copie toutes les données globales dans outputData
         console.log("Données combinées avant génération d'aperçu :", outputData);
     
+         // Vérifier si globalOutputData est vide
+        if (globalOutputData.length === 0) {
+            console.warn("Aucune donnée XMP disponible dans globalOutputData.");
+            showMessage("Aucune donnée extraite des fichiers XMP. Veuillez vérifier vos fichiers.", "warning");
+            return; // Stopper l'exécution si aucune donnée n'est disponible
+        }
         const fileInput = document.getElementById('input-files');
     
         for (let i = 0; i < fileInput.files.length; i++) {
@@ -594,7 +600,7 @@ updateMappingList();
             }
         }
     
-        // Attendre que le traitement soit terminé avant d'afficher l'aperçu
+        // Attendre que tout soit traité avant d'afficher l'aperçu
         setTimeout(() => {
             console.log("Contenu final de outputData :", outputData);
             if (outputData.length > 0) {
