@@ -24,12 +24,13 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Fonction pour traiter les fichiers XMP
-    async function processXMP(file) {
-        console.log("Traitement du fichier XMP : ", file.name);
+// Fonction pour traiter les fichiers XMP
+async function processXMP(file) {
+    console.log("Traitement du fichier XMP :", file.name);
 
-        // Lire le contenu du fichier
-        const fileContent = await file.text(); // Lecture du fichier XMP en texte brut
+    try {
+        // Lire le contenu du fichier XMP en texte brut
+        const fileContent = await file.text();
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(fileContent, "application/xml");
 
@@ -40,7 +41,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        // Extraire les balises pertinentes
+        // Extraire les balises <rdf:li> pertinentes
         const items = xmlDoc.getElementsByTagName("rdf:li");
         if (items.length === 0) {
             console.warn("Aucune balise <rdf:li> trouvée dans le fichier XMP :", file.name);
@@ -50,42 +51,50 @@ document.addEventListener('DOMContentLoaded', function () {
 
         console.log(`${items.length} pistes trouvées dans le fichier XMP`);
 
-        const data = [];
+        const audioData = [];
         for (let item of items) {
-            // Extraire les données des balises
+            // Extraire les données nécessaires
             const filePath = item.getElementsByTagName("stRef:filePath")[0]?.textContent || "Inconnu";
             const fromPart = item.getElementsByTagName("stRef:fromPart")[0]?.textContent || "time:0";
             const toPart = item.getElementsByTagName("stRef:toPart")[0]?.textContent || "time:0";
-        
+
             console.log("Données brutes extraites :", { filePath, fromPart, toPart });
-        
-            // Vérification de filePath
+
+            // Vérifier le chemin du fichier et filtrer par extension audio
             if (filePath === "Inconnu") {
                 console.warn("Chemin de fichier inconnu trouvé dans le fichier XMP :", item);
-                continue; // Ignore cet élément et passe au suivant
+                continue; // Ignore cet élément
             }
-        
-            // Utiliser les fonctions existantes ou créer de nouvelles pour traiter les données
-            const parsedFile = parseFileName(filePath); // Découpe le nom du fichier
-            const timecodes = parseTimecodes(fromPart, toPart); // Calcule les timecodes et la durée
-        
-            // Ajouter les données à la liste
-            data.push({
-                ...parsedFile, // Label, Album, Piste, Titre, Artiste
-                ...timecodes   // Timecode IN, Timecode OUT, Durée
+            const extension = filePath.split('.').pop().toLowerCase();
+            if (!['aiff', 'wav', 'mp3'].includes(extension)) {
+                console.warn(`Fichier ignoré (extension non audio) : ${filePath}`);
+                continue; // Ignore les fichiers non audio
+            }
+
+            // Calculer les timecodes à l'aide de parseTimecodes
+            const timecodes = parseTimecodes(fromPart, toPart);
+
+            // Ajouter les données structurées
+            audioData.push({
+                filePath,
+                ...timecodes
             });
         }
 
-        console.log("Données extraites pour le fichier XMP :", data);
+        console.log("Fichiers audio extraits et traités :", audioData);
 
-        // Ajouter au tableau global de données
+        // Ajouter au tableau global des données
         globalOutputData.push({
             file: file.name,
-            data: data
+            data: audioData
         });
+
         console.log("Données ajoutées à globalOutputData :", globalOutputData);
-        console.log("OutputData XMP mis à jour :", outputDataXMP);
-        console.log("Données ajoutées à globalOutputData :", globalOutputData);
-        showMessage(`Données extraites avec succès pour le fichier XMP : ${file.name}`, "success");
+        showMessage(`Données audio extraites avec succès pour le fichier XMP : ${file.name}`, "success");
+    } catch (error) {
+        console.error("Erreur lors du traitement du fichier XMP :", error);
+        showMessage(`Erreur lors du traitement du fichier XMP : ${error.message}`, "error");
     }
+}
+
 });
