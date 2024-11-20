@@ -31,65 +31,45 @@ document.addEventListener('DOMContentLoaded', function () {
 async function processXMP(file) {
     console.log("Traitement du fichier XMP : ", file.name);
 
-    // Lire le contenu du fichier XMP
     const fileContent = await file.text();
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(fileContent, "application/xml");
 
-    // Vérifier si le fichier est bien parsé
     if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
         console.error("Erreur de parsing dans le fichier XMP :", file.name);
-        showMessage(`Erreur de parsing dans le fichier XMP : ${file.name}`, "error");
         return;
     }
 
-    // Extraire les balises <rdf:li>
     const items = xmlDoc.getElementsByTagName("rdf:li");
     if (items.length === 0) {
         console.warn("Aucune balise <rdf:li> trouvée dans le fichier XMP :", file.name);
-        showMessage(`Aucune piste trouvée dans le fichier XMP : ${file.name}`, "warning");
         return;
     }
 
     console.log(`${items.length} pistes trouvées dans le fichier XMP`);
+    const audioData = [];
 
-    const audioData = []; // Stocker les données audio extraites
-
-    // Parcourir chaque balise <rdf:li>
     for (let item of items) {
         const filePath = item.getElementsByTagName("stRef:filePath")[0]?.textContent || "Inconnu";
         const fromPart = item.getElementsByTagName("stRef:fromPart")[0]?.textContent || "time:0";
         const toPart = item.getElementsByTagName("stRef:toPart")[0]?.textContent || "time:0";
 
-        console.log("Données brutes extraites :", { filePath, fromPart, toPart });
+        if (filePath === "Inconnu" || !filePath.endsWith('.aiff')) continue;
 
-        // Vérifier si le chemin du fichier est valide
-        if (filePath === "Inconnu") {
-            console.warn("Chemin de fichier inconnu trouvé dans le fichier XMP :", item);
-            continue; // Ignorer cet élément
-        }
-
-        // Vérifier l'extension du fichier
-        const extension = filePath.split('.').pop().toLowerCase();
-        if (!['aiff', 'wav', 'mp3'].includes(extension)) {
-            console.warn(`Fichier ignoré (extension non audio) : ${filePath}`);
-            continue; // Ignorer les fichiers non audio
-        }
-
-        // Découper et analyser les informations du filePath
-        const parsedFile = parseFilePath(filePath);
-
-        // Calculer les timecodes spécifiques aux XMP
         const timecodes = parseTimecodesForXMP(fromPart, toPart);
-
-        console.log("Timecodes calculés :", timecodes);
-
-        // Ajouter les données extraites à la liste
         audioData.push({
-            ...parsedFile, // Données extraites du filePath
-            ...timecodes,  // Timecodes calculés
+            filePath,
+            ...timecodes,
         });
     }
+
+    if (audioData.length > 0) {
+        globalOutputData.push({
+            file: file.name,
+            data: audioData,
+        });
+    }
+
 
     console.log("Fichiers audio extraits et traités :", audioData);
 
