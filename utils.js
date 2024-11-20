@@ -1,3 +1,4 @@
+export { parseFilePath, parseTimecodesForXMP, decodeXMPTimeValue, convertFramesToTimecode };
 // Fonction pour extraire les informations depuis le nom du fichier
 function parseFileName(filePath) {
     let fileName = filePath.replace('.aiff', ''); // Supprimer l'extension
@@ -32,6 +33,72 @@ function parseTimecodes(fromPart, toPart) {
         duration: convertFramesToTimecode(endSeconds - startSeconds)
     };
 }
+
+    // Fonction pour décoder et calculer les timecodes spécifiques aux fichiers XMP
+    function parseTimecodesForXMP(fromPart, toPart) {
+        const fps = 25; // Par défaut
+        const startFrames = decodeXMPTimeValue(fromPart);
+        const endFrames = decodeXMPTimeValue(toPart);
+    
+        const timecodeIn = convertFramesToTimecode(startFrames, fps);
+        const timecodeOut = convertFramesToTimecode(endFrames, fps);
+        const duration = convertFramesToTimecode(endFrames - startFrames, fps);
+    
+        return { timecodeIn, timecodeOut, duration };
+    }
+    
+    // Décoder les valeurs "time:..." dans les fichiers XMP
+    function decodeXMPTimeValue(value) {
+        const match = value.match(/time:(\d+)/);
+        return match ? parseInt(match[1], 10) : 0;
+    }
+    
+    // Décoder les valeurs de temps pour les XMP
+    function decodeTimeValueForXMP(part, fps) {
+        // Extraire uniquement la valeur numérique après "time:"
+        const match = part.match(/time:(\d+)/);
+        if (match) {
+            const frames = parseInt(match[1], 10);
+            return frames / fps; // Convertir en secondes
+        }
+        console.warn("Valeur de temps incorrecte ou manquante dans le XMP :", part);
+        return 0; // Retourner 0 si aucune valeur valide n'est trouvée
+    }
+
+        // Conversion générique de frames en timecode (hh:mm:ss:ff)
+    function convertFramesToTimecode(seconds) {
+        const fps = 25; // Fréquence d'image
+        const totalFrames = Math.max(0, Math.floor(seconds * fps));
+
+        const hours = Math.floor(totalFrames / (fps * 3600));
+        const minutes = Math.floor((totalFrames % (fps * 3600)) / (fps * 60));
+        const secs = Math.floor((totalFrames % (fps * 60)) / fps);
+        const frames = totalFrames % fps;
+
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}:${String(frames).padStart(2, '0')}`;
+    }
+
+    function parseFilePath(filePath) {
+        const parts = filePath.split('-');
+    
+        if (parts.length < 4) {
+            console.warn("Format de filePath inattendu :", filePath);
+            return {
+                trackName: filePath, // Par défaut, on retourne le filePath entier
+                artist: "Inconnu",
+                album: "Inconnu",
+                label: "Inconnu",
+            };
+        }
+    
+        const trackName = parts.slice(3).join(' ').replace(/_/g, ' '); // Traite les underscores
+        const artist = parts[2].replace(/_/g, ' ');
+        const album = parts[1].replace(/_/g, ' ');
+        const label = parts[0].replace(/_/g, ' ');
+    
+        return { trackName, artist, album, label };
+    }
+    
 
     // Fonctions utilitaires pour le traitement de texte et de temps
     function cleanText(text) {
@@ -140,5 +207,5 @@ function parseTimecodes(fromPart, toPart) {
                 trackName: trackName.trim(),
                 artists: artists.trim()
             };
+
         }
-        

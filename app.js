@@ -1,3 +1,5 @@
+import { globalOutputData } from './globals.js';
+import { parseFileName, parseTimecodesForXMP, decodeXMPTimeValue, convertFramesToTimecode } from './utils.js';
 document.addEventListener('DOMContentLoaded', function() {
     let outputData = []; // Données de sortie
     let projectName = ""; // Nom du projet
