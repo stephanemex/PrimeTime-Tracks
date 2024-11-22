@@ -32,60 +32,39 @@ function parseCsv(text) {
 // Fonction de correspondance entre XMP et CSV
 function matchCSVWithXMP(xmpData, csvData) {
     console.log("Début de la correspondance XMP/CSV");
-    console.log("Données XMP :", xmpData);
-    console.log("Données CSV :", csvData);
-
     const matchedData = [];
 
     xmpData.forEach(xmpItem => {
-        const filePath = xmpItem.label || "";
-
-        // Vérification du format attendu
-        if (!filePath || !filePath.endsWith(".aif")) {
-            console.warn(`Fichier ignoré (non pris en charge) : ${filePath}`);
-            return;
+        const parsedFile = parseFileName(xmpItem.filePath || "");
+        if (!parsedFile) {
+            return; // Fichier ignoré ou invalide
         }
 
-        // Extraction des parties du chemin
-        const pathParts = filePath.replace(".aif", "").split("_");
-        if (pathParts.length < 4) {
-            console.warn(`Format de chemin invalide : ${filePath}`);
-            return;
-        }
+        // Recherche d'une correspondance dans le CSV
+        const csvMatch = csvData.find(csvRow =>
+            csvRow["Album Code"] === parsedFile.album &&
+            csvRow["Track #"] === parsedFile.track &&
+            csvRow["Track Title"]?.toLowerCase() === parsedFile.title.toLowerCase()
+        );
 
-        // Informations extraites
-        const [label, albumCode, trackNumber] = pathParts;
-        const titleParts = pathParts.slice(3);
-        const trackTitle = titleParts.join(" ").replace(/_/g, " ").toLowerCase().trim();
-
-        // Recherche dans le CSV avec normalisation
-        const csvMatch = csvData.find(csvRow => {
-            return (
-                (csvRow["Album Code"]?.toLowerCase() === albumCode.toLowerCase()) ||
-                (csvRow["Track #"]?.toLowerCase() === trackNumber.toLowerCase()) ||
-                (csvRow["Track Title"]?.toLowerCase().includes(trackTitle))
-            );
-        });
-
-        // Construction de l'entrée correspondante
         const matchedEntry = {
-            label: csvMatch?.["Label"] || label || "Inconnu",
-            album: csvMatch?.["Album Title"] || albumCode || "Inconnu",
-            trackNumber: csvMatch?.["Track #"] || trackNumber || "Inconnu",
-            trackName: csvMatch?.["Track Title"] || trackTitle || "Inconnu",
+            label: csvMatch?.["Label"] || parsedFile.label,
+            album: csvMatch?.["Album Title"] || parsedFile.album,
+            trackNumber: csvMatch?.["Track #"] || parsedFile.track,
+            trackName: csvMatch?.["Track Title"] || parsedFile.title,
             artists: csvMatch?.["Artist(s)"] || "Inconnu",
-            composer: csvMatch?.["Composer(s)"] || titleParts[titleParts.length - 1] || "Inconnu",
+            composer: csvMatch?.["Composer(s)"] || parsedFile.artist,
             duration: csvMatch?.["Duration"] || "Inconnu",
-            timecodeIn: parseTimecode(xmpItem.timecodeIn || "Inconnu"),
-            timecodeOut: parseTimecode(xmpItem.timecodeOut || "Inconnu")
+            timecodeIn: xmpItem.timecodeIn || "Inconnu",
+            timecodeOut: xmpItem.timecodeOut || "Inconnu",
         };
 
-        console.log(`Correspondance trouvée pour ${filePath} :`, matchedEntry);
         matchedData.push(matchedEntry);
     });
 
     return matchedData;
 }
+
 
 // Fonction pour traiter les données d'un fichier CSV
 function processCSVData(csvData, fileName) {

@@ -1,53 +1,32 @@
 /**
  * Analyse un chemin de fichier et extrait les informations principales.
  * @param {string} filePath - Chemin ou nom du fichier.
- * @returns {Object} - Objet contenant les informations extraites ou indiquant que le fichier est ignoré.
+ * @returns {Object} - Objet contenant les informations extraites ou indiquant si le fichier est ignoré.
  */
 function parseFileName(filePath) {
     if (!filePath || typeof filePath !== "string") {
         console.warn("Chemin ou nom de fichier invalide :", filePath);
-        return {
-            label: "Inconnu",
-            album: "Inconnu",
-            track: "Inconnu",
-            title: "Inconnu",
-            artist: "Inconnu",
-        };
+        return null;
     }
 
-    // Définir les extensions supportées et ignorées
+    // Extensions supportées et ignorées
     const supportedExtensions = [".aif", ".aiff", ".wav", ".mp3"];
     const ignoredExtensions = [".mp4", ".mov", ".mxf"];
 
-    // Identifier l'extension du fichier
     const extension = filePath.slice(filePath.lastIndexOf(".")).toLowerCase();
 
     if (ignoredExtensions.includes(extension)) {
-        console.warn("Fichier ignoré (extension non prise en charge) :", filePath);
-        return {
-            label: "Ignoré",
-            album: "",
-            track: "",
-            title: "",
-            artist: "",
-        };
+        console.warn("Fichier ignoré (non pris en charge) :", filePath);
+        return null; // Ignorer le fichier
     }
 
     if (!supportedExtensions.includes(extension)) {
         console.warn("Extension inconnue ou non supportée :", extension);
-        return {
-            label: "Extension inconnue",
-            album: "",
-            track: "",
-            title: "",
-            artist: "",
-        };
+        return null;
     }
 
-    // Supprimer l'extension pour traiter le nom du fichier
+    // Supprimer l'extension et découper le nom
     const fileName = filePath.replace(/\.[^/.]+$/, "");
-
-    // Découper le nom en parties basées sur les séparateurs (adapté à vos conventions de nommage)
     const parts = fileName.split("_");
 
     return {
@@ -61,8 +40,8 @@ function parseFileName(filePath) {
 
 /**
  * Décoder une valeur XMP brute pour extraire un temps en secondes.
- * @param {string} value - Valeur XMP brute (exemple : "time:63567504000f254016000000").
- * @returns {number} - Temps en secondes, ou 0 si le format est invalide.
+ * @param {string} value - Valeur XMP brute.
+ * @returns {number} - Temps en secondes ou 0 si le format est invalide.
  */
 function decodeXMPTimeValue(value) {
     if (!value.startsWith("time:")) {
@@ -70,14 +49,10 @@ function decodeXMPTimeValue(value) {
         return 0;
     }
 
-    const hexTimecode = value.slice(5).split(/[a-f]+/i)[0]; // Séparer les parties hexadécimales des suffixes
-    if (hexTimecode.length > 12) { // 12 caractères suffisent pour les plages réalistes
-        console.warn("Timecode trop long ou hors limites :", value);
-        return 0;
-    }
-
+    const hexTimecode = value.slice(5);
     const seconds = parseInt(hexTimecode, 16);
-    if (isNaN(seconds) || seconds < 0 || seconds > 3153600000) {
+
+    if (isNaN(seconds) || seconds <= 0 || seconds > 86400 * 365 * 10) { // Limite de 10 ans max en secondes
         console.warn("Timecode hors limites ou invalide :", value);
         return 0;
     }
