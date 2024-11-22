@@ -1,1 +1,0 @@
-export let globalOutputData = []; // Variable pour stocker les données globales
