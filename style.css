@@ -88,6 +88,29 @@ select {
     cursor: pointer;
 }
 
+.btn {
+    padding: 10px 15px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.btn:hover {
+    background-color: #0056b3;
+}
+
+.btn-success {
+    background-color: #28a745 !important;
+}
+
+.btn-success:hover {
+    background-color: #218838 !important;
+}
+
+
 /* Effet au survol */
 select:hover {
     border-color: #888; /* Changer la couleur de la bordure */
@@ -180,6 +203,84 @@ input[type="date"]:disabled {
     cursor: not-allowed;
 }
 
+/* Conteneur général pour chaque item */
+.mapping-item {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column; /* Empile les enfants verticalement */
+    gap: 15px; /* Espace entre les enfants */
+}
+
+/* Détails au-dessus du tableau */
+.mapping-details {
+    font-size: 14px;
+}
+
+.mapping-details ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.mapping-details li {
+    margin-bottom: 5px;
+}
+
+/* Conteneur pour le tableau */
+.mapping-table {
+    overflow-x: auto; /* Permet un défilement horizontal si nécessaire */
+}
+
+.mapping-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.mapping-table th,
+.mapping-table td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+.mapping-table th {
+    background-color: #495057;
+    color: #fff;
+    font-weight: bold;
+}
+
+.mapping-table td {
+    background-color: #f8f9fa;
+}
+
+.mapping-table tr:nth-child(even) td {
+    background-color: #e9ecef;
+}
+
+.mapping-table tr:hover td {
+    background-color: #d4edda;
+}
+
+/* Bouton de suppression */
+.delete-btn {
+    align-self: flex-end; /* Place le bouton à droite */
+    padding: 8px 12px;
+    background-color: #dc3545;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.delete-btn:hover {
+    background-color: #c82333;
+}
+
 
 /* Boutons */
 button {
@@ -244,6 +345,22 @@ button {
 #extract-btn.succes::after {
     content: " Contenu Extrait";
 }
+
+.mode-toggle {
+    margin: 10px 0;
+    display: flex;
+    gap: 15px;
+    font-size: 16px;
+}
+
+.mode-toggle label {
+    cursor: pointer;
+}
+
+.mode-toggle input[type="radio"] {
+    margin-right: 5px;
+}
+
 
 /* Message d'information */
 #message {

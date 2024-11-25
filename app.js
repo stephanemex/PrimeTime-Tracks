@@ -1,111 +1,184 @@
-document.addEventListener('DOMContentLoaded', function() {
-    let outputData = []; // Données de sortie
-    let projectName = ""; // Nom du projet
-    let fcpxmlExtractedContent = ""; // Contenu extrait pour les fichiers .fcpxmld
-    let diffusionMappings = {}; // Correspondances de diffusion (ex. Projet -> Nombre de diffusions)
-    
-    const fileInput = document.getElementById('input-files');
-    const uploadLabel = document.querySelector('.file-upload-label');
-    const extractBtn = document.getElementById('extract-btn');
-    fileInput.disabled = true;
-    extractBtn.style.display = 'none';
+// Variables globales
+let globalCsvData = []; // Contiendra les données parsées du CSV
+let diffusionMappings = {}; // Stocke les correspondances entre sujets et diffusions
+let outputData = []; // Contient les données extraites des fichiers XML
 
+document.addEventListener("DOMContentLoaded", function () {
     console.log("DOM chargé, initialisation de l'application");
 
-    // Activer l'input de fichiers après l'initialisation
-    fileInput.disabled = false;
+    // Sélection des éléments DOM
+    const inputCsv = document.getElementById("input-csv");
+    const btnUploadCsv = document.getElementById("btn-upload-csv");
+    const mappingList = document.getElementById("mapping-list");
+    const fileInput = document.getElementById("input-files");
+    const extractBtn = document.getElementById("extract-btn");
+    const processBtn = document.getElementById("process-btn");
+    const downloadBtn = document.getElementById("download-btn");
+    const uploadLabel = document.querySelector(".file-upload-label");
+    const addMappingBtn = document.getElementById("add-mapping-btn");
 
-    // Écouteur pour le changement de fichiers
-    fileInput.addEventListener('change', function(event) {
-        const files = event.target.files;
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-            console.log("Fichier sélectionné : ", file.name); // Vérification du nom de fichier
-            if (file.name.endsWith('.fcpxml')) {
-                console.log("Fichier FCPXML détecté : ", file.name);
-                // Ajoutez ici la logique de traitement des fichiers FCPXML
-                processXML(file);  // Si vous avez une fonction processXML pour gérer les fichiers
-            } else if (file.name.endsWith('.fcpxmld')) {
-                console.log("Fichier FCPXMLD détecté : ", file.name);
-                // Ajoutez ici la logique de traitement des fichiers FCPXMLD
-                processFcpxmld(file);  // Si vous avez une fonction processFcpxmld pour gérer les fichiers
-            }
-        }
-    });
+    // Initialisation des éléments
+    extractBtn.style.display = "none";
+    processBtn.style.display = "none";
+    downloadBtn.style.display = "none";
 
-    console.log("DOM chargé, initialisation de l'application");
-
-    // Vérifie si JSZip est chargé
-    if (typeof JSZip === 'undefined') {
-        console.error("JSZip n'est pas chargé. Assurez-vous d'avoir inclus la bibliothèque JSZip dans votre HTML.");
-        showMessage("Erreur: JSZip n'est pas chargé. Contactez l'administrateur.", "error");
-        return;
+    // Affiche un message utilisateur dans l'interface
+    function showMessage(message, type = "info") {
+        const messageContainer = document.getElementById("message");
+        if (!messageContainer) return;
+        messageContainer.innerText = message;
+        messageContainer.className = `message ${type}`;
     }
 
-    // Fonction pour activer le bouton de fichier
-    function checkEnableFileInput() {
-        fileInput.disabled = Object.keys(diffusionMappings).length === 0;
-        uploadLabel.classList.toggle('enabled', !fileInput.disabled);
-    }
-  
-// Fonction pour mettre à jour la liste des correspondances
-function updateMappingList() {
-    const mappingList = document.getElementById('mapping-list');
-    mappingList.innerHTML = ''; // Vider la liste avant de la re-remplir
-    Object.keys(diffusionMappings).forEach((subject) => {
-        const { producerName, showName, broadcastCount, projectDate } = diffusionMappings[subject];
-        // Créer un élément de liste <li>
-        const listItem = document.createElement('li');
-        // Ajouter le texte à l'élément de liste
-        listItem.innerHTML = `
-            <div class="mapping-info">
-                <ul class="mapping-details">
-                <li>Journaliste/Producteur : <b>${producerName}</b></li>
-                <li>Émission : <b>${showName}</b></li>
-                <li>Sujet : <b>${subject}</b></li>
-                <li>Diffusions : <b>${broadcastCount}</b></li>
-                <li>Date : <b>${projectDate}</b></li>
-            </ul>
-            </div>
-            <button class="delete-btn">Supprimer</button>
-        `;
-        // Ajouter un gestionnaire d'événements pour le bouton de suppression
-        listItem.querySelector('.delete-btn').addEventListener('click', () => {
-            delete diffusionMappings[subject]; // Supprimer la correspondance
-            updateMappingList(); // Mettre à jour la liste
+    // Fonction pour parser le contenu d'un fichier CSV
+    function parseCsv(text) {
+        const rows = text.trim().split("\n");
+        const headers = rows
+            .shift()
+            .split(",")
+            .map((header) => header.replace(/"/g, "").trim());
+        return rows.map((row) => {
+            const values = row.split(",").map((value) => value.replace(/"/g, "").trim());
+            return headers.reduce((acc, header, index) => {
+                acc[header] = values[index] || "Inconnu";
+                return acc;
+            }, {});
         });
-        // Ajouter l'élément de liste <li> à la balise <ul>
-        mappingList.appendChild(listItem);
-    });
-}
-
-// Ajout de correspondances
-document.getElementById('add-mapping-btn').addEventListener('click', () => {
-    const producerName = document.getElementById('producer-name').value.trim();
-    const showName = document.getElementById('show-name').value;
-    const subject = document.getElementById('project-name').value.trim(); // Sujet
-    const broadcastCount = parseInt(document.getElementById('broadcast-count').value);
-    const projectDate = document.getElementById('project-date').value; // Date du projet
-    
-    // Vérification des champs remplis
-    if (producerName && showName && subject && !isNaN(broadcastCount) && projectDate) {
-        diffusionMappings[subject] = { producerName, showName, broadcastCount, projectDate };
-        updateMappingList(); // Mettre à jour la liste après ajout
-        // Réinitialiser les champs après ajout
-        document.getElementById('producer-name').value = '';
-        document.getElementById('show-name').value = '';
-        document.getElementById('project-name').value = '';
-        document.getElementById('broadcast-count').value = '';
-        document.getElementById('project-date').value = '';
-        checkEnableFileInput(); // Si vous avez une fonction pour vérifier les fichiers
-    } else {
-        showMessage("Veuillez remplir tous les champs correctement.", "error");
     }
+
+    // Gestion de l'importation du CSV
+    inputCsv.addEventListener("change", function (event) {
+        const file = event.target.files[0];
+        if (!file) {
+            showMessage("Aucun fichier CSV sélectionné.", "warning");
+            return;
+        }
+
+        btnUploadCsv.textContent = `Fichier ajouté : ${file.name}`;
+        btnUploadCsv.classList.add("btn-success");
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const content = e.target.result;
+            globalCsvData = parseCsv(content);
+            if (globalCsvData.length > 0) {
+                showMessage(`Fichier CSV importé avec ${globalCsvData.length} entrées.`, "success");
+                console.log("Données CSV parsées :", globalCsvData);
+            } else {
+                showMessage("Le fichier CSV semble vide ou invalide.", "error");
+            }
+        };
+        reader.readAsText(file);
+    });
+
+    // Mise à jour de la liste des correspondances
+    function updateMappingList() {
+        if (!mappingList) return;
+        mappingList.innerHTML = "";
+
+        Object.entries(diffusionMappings).forEach(([subject, mapping]) => {
+            const { producerName, showName, broadcastCount, projectDate, csvRows } = mapping;
+
+            const listItem = document.createElement("li");
+            listItem.className = "mapping-item";
+
+            const escapedHtml = `
+                <div class="mapping-info">
+                    <ul class="mapping-details">
+                        <li>Journaliste/Producteur : <b>${producerName}</b></li>
+                        <li>Émission : <b>${showName}</b></li>
+                        <li>Sujet : <b>${subject}</b></li>
+                        <li>Diffusions : <b>${broadcastCount}</b></li>
+                        <li>Date : <b>${projectDate}</b></li>
+                    </ul>
+                    <h4>Données associées depuis le CSV :</h4>
+                    <ul class="csv-details">
+                        ${renderCsvRows(csvRows)}
+                    </ul>
+                </div>`;
+            listItem.innerHTML = escapedHtml;
+
+            const deleteButton = document.createElement("button");
+            deleteButton.className = "delete-btn";
+            deleteButton.textContent = "Supprimer";
+            deleteButton.addEventListener("click", () => {
+                delete diffusionMappings[subject];
+                updateMappingList();
+                showMessage(`Correspondance supprimée pour le sujet : "${subject}"`, "info");
+            });
+
+            listItem.appendChild(deleteButton);
+            mappingList.appendChild(listItem);
+        });
+    }
+
+    // Fonction pour afficher les lignes associées du CSV
+    function renderCsvRows(csvRows) {
+        if (!Array.isArray(csvRows) || csvRows.length === 0) {
+            return "<li>Aucune donnée associée trouvée dans le CSV.</li>";
+        }
+        return csvRows
+            .map(
+                (row, index) => `
+                <li>
+                    <strong>Entrée ${index + 1} :</strong>
+                    Label : ${row.Label || "Inconnu"} | 
+                    Album : ${row["Album Title"] || "Inconnu"} | 
+                    Piste : ${row["Track #"] || "Inconnu"} | 
+                    Titre : ${row["Track Title"] || "Inconnu"} |
+                    Artistes : ${row["Artist(s)"] || "Inconnu"} |
+                    Durée : ${row.Duration || "Inconnu"}
+                </li>`
+            )
+            .join("");
+    }
+
+    // Ajout de correspondances
+    addMappingBtn.addEventListener("click", function () {
+        const producerName = document.getElementById("producer-name").value.trim();
+        const showName = document.getElementById("show-name").value.trim();
+        const subject = document.getElementById("project-name").value.trim();
+        const broadcastCount = parseInt(document.getElementById("broadcast-count").value.trim());
+        const projectDate = document.getElementById("project-date").value.trim();
+
+        if (!producerName || !showName || !subject || isNaN(broadcastCount) || !projectDate) {
+            showMessage("Tous les champs du formulaire doivent être remplis correctement.", "error");
+            return;
+        }
+
+        const csvRows = globalCsvData.filter((row) =>
+            row["Track Title"]?.toLowerCase().includes(subject.toLowerCase())
+        );
+
+        if (csvRows.length === 0) {
+            showMessage(`Aucune correspondance trouvée dans le CSV pour le sujet : "${subject}"`, "warning");
+        }
+
+        diffusionMappings[subject] = {
+            producerName,
+            showName,
+            broadcastCount,
+            projectDate,
+            csvRows,
+        };
+
+        updateMappingList();
+        resetForm();
+        showMessage(`Correspondance ajoutée pour le sujet : "${subject}"`, "success");
+    });
+
+    // Réinitialiser le formulaire
+    function resetForm() {
+        ["producer-name", "show-name", "project-name", "broadcast-count", "project-date"].forEach((id) => {
+            const element = document.getElementById(id);
+            if (element) element.value = "";
+        });
+    }
+
+    // Initialisation de la liste des correspondances
+    updateMappingList();
+    console.log("Initialisation de l'application terminée");
 });
-
-// Appeler updateMappingList une fois au chargement de la page pour afficher les correspondances existantes
-updateMappingList();
-
 
     // Gestion de la sélection de fichier
     fileInput.addEventListener('change', async () => {
