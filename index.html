@@ -61,10 +61,11 @@
             <!-- Champ pour la date du projet -->
             <input type="date" id="project-date" placeholder="Date de première diffusion" />
 
+            <!-- Import de fichiers CSV -->
             <div class="input-group">
-                <label for="input-csv">Importer un fichier CSV :</label>
-                <input type="file" id="input-csv" accept=".csv" style="display: none;">
-                <button id="btn-upload-csv" class="btn">Ajouter un fichier CSV</button>
+                <label for="input-csv">Importer des fichiers CSV :</label>
+                <input type="file" id="input-csv" accept=".csv" multiple style="display: none;">
+                <button id="btn-upload-csv" class="btn">Ajouter des fichiers CSV</button>
             </div>
             
             <button id="add-mapping-btn">Ajouter</button>
@@ -78,31 +79,34 @@
             <h2>Charger le projet</h2>
         </div>
 
-            <!-- Toggle pour sélectionner le mode -->
-        <div class="mode-toggle">
-            <label>
-                <input type="radio" name="fileType" value="fcpxml" checked>
-                FCPXML (Final Cut Pro)
+
+        <!-- Interrupteur pour sélectionner le type de fichier -->
+        <div class="file-type-switch">
+            <span>Importer :</span>
+            <!-- Conteneur pour le switch -->
+            <label class="switch">
+                <input type="checkbox" id="file-type-toggle">
+                <span class="slider"></span>
             </label>
-            <label>
-                <input type="radio" name="fileType" value="xmp">
-                XMP (Adobe)
-            </label>
+            <!-- Icônes en dehors de l'interrupteur -->
+            <img id="fcpx-icon" src="img/FCPX-Logo.png" alt="FCPXML" class="file-icon visible">
+            <img id="xmp-icon" src="img/adobe-premiere-pro-logo.png" alt="XMP" class="file-icon hidden">
         </div>
 
-        <!-- Chargement du fichier-->
+        <!-- Chargement des fichiers -->
         <div class="input-group">
             <input 
                 type="file" 
                 id="input-files" 
                 multiple 
                 accept=".xml,.fcpxml,.fcpxmld" 
-                disabled 
             />
             <label class="file-upload-label" for="input-files">Sélectionner les fichiers XML</label>
         </div>
-        <!-- Bouton d'extraction du fichier Info.fcpxml pour les fichiers .fcpxmld -->
+
+        <!-- Bouton d'extraction pour les fichiers .fcpxmld -->
         <button id="extract-btn" style="display: none;">Extraire le fichier .fcpxml</button>
+
 
         <!-- Bouton de génération de l'aperçu -->
         <button id="process-btn">Générer l'aperçu</button>

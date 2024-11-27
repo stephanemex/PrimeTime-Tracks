@@ -9,7 +9,7 @@ function partialMatch(csvTitle, fcpxmlTitle) {
     return csvWords.every((word) => fcpxmlTitle.includes(word)); // Vérifie si chaque mot est dans le titre FCPXML
 }
 
-// Enrichessement des données par le CSV
+// Enrichissement des données par le CSV
 function enrichWithMappings(outputData, csvData) {
     if (!csvData || csvData.length === 0) {
         console.warn("Aucune donnée CSV fournie pour enrichir.");
@@ -50,7 +50,6 @@ function enrichWithMappings(outputData, csvData) {
         });
     });
 }
-
 
 // Affichage de l'aperçu
 function displayPreview(projectName) {
