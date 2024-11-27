@@ -346,6 +346,7 @@ button {
     content: " Contenu Extrait";
 }
 
+/* Type de fichiers importés */
 .file-type-switch {
     display: flex;
     align-items: center;
@@ -389,6 +390,7 @@ button {
     border-radius: 50%;
 }
 
+/* Inputs*/ 
 input:checked + .slider {
     background-color: #2196F3;
 }

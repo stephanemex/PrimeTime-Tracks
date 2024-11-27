@@ -19,12 +19,16 @@ document.addEventListener("DOMContentLoaded", function () {
         if (toggle.checked) {
             selectedMode = "xmp"; // Mode XMP sélectionné
             fileInput.accept = ".xmp"; // Types de fichiers acceptés
+            
+            // Masquer l'icône FCPXML et afficher l'icône XMP
             fcpxIcon.classList.add("hidden");
             xmpIcon.classList.remove("hidden");
             console.log("Mode sélectionné : XMP");
         } else {
             selectedMode = "fcpxml"; // Mode FCPXML sélectionné
             fileInput.accept = ".xml,.fcpxml,.fcpxmld"; // Types de fichiers acceptés
+            
+            // Masquer l'icône XMP et afficher l'icône FCPXML
             xmpIcon.classList.add("hidden");
             fcpxIcon.classList.remove("hidden");
             console.log("Mode sélectionné : FCPXML");
@@ -112,46 +116,23 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    // **Extraction automatique du contenu FCPXML depuis .fcpxmld**
-    extractBtn.addEventListener("click", async function () {
-        console.log("Bouton d'extraction cliqué");
-        const file = fileInput.files[0];
-
-        if (file && (file.name.endsWith(".fcpxmld") || file.name.endsWith(".fcpxmld.zip"))) {
-            console.log("Fichier .fcpxmld valide sélectionné :", file.name);
-            try {
-                const xmlContent = await extractFcpxmlFromPackage(file);
-                if (xmlContent) {
-                    fcpxmlExtractedContent = xmlContent;
-                    console.log("Contenu FCPXML extrait avec succès (premiers 200 caractères) :", fcpxmlExtractedContent.substring(0, 200));
-                    showMessage("Extraction réussie ! Vous pouvez maintenant générer l'aperçu.", "success");
-                    processXml(fcpxmlExtractedContent, file.name);
-                } else {
-                    console.error("Échec de l'extraction du contenu FCPXML");
-                    showMessage("Échec de l'extraction du fichier FCPXML. Veuillez vérifier le fichier.", "error");
-                }
-            } catch (error) {
-                console.error("Erreur lors de l'extraction :", error);
-                showMessage("Erreur lors de l'extraction du fichier FCPXML : " + error.message, "error");
-            }
-        } else {
-            console.error("Fichier invalide ou non sélectionné :", file ? file.name : "aucun fichier");
-            showMessage("Veuillez sélectionner un fichier .fcpxmld ou .fcpxmld.zip valide.", "error");
-        }
-    });
+    // **Fusionne toutes les données des fichiers CSV**
+    function combineCsvData(importedCsvFiles) {
+        return importedCsvFiles.flatMap(file => file.data); // Fusionne les données
+    }
 
     // **Générer l'aperçu du projet**
     if (processBtn) {
         processBtn.addEventListener("click", function () {
             console.log("Génération de l'aperçu demandée.");
             console.log("Données globales actuellement stockées :", globalOutputData);
-        
+
             if (!importedCsvFiles || importedCsvFiles.length === 0) {
                 console.warn("Aucun fichier CSV importé pour enrichir les données.");
             } else {
                 const combinedCsvData = combineCsvData(importedCsvFiles); // Combine les données de tous les fichiers CSV
                 console.log("Données combinées des CSV :", combinedCsvData);
-        
+
                 // Enrichir les données du projet avec les données CSV combinées
                 enrichWithMappings(globalOutputData, combinedCsvData);
             }
@@ -163,7 +144,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     console.log("Gestionnaire de fichiers FCPXML prêt.");
-
 
     // Extraction automatique du contenu FCPXML depuis .fcpxmld
     extractBtn.addEventListener("click", async function () {
@@ -236,21 +216,42 @@ async function extractFcpxmlFromPackage(file) {
     }
 }
 
-// Fonction de traitement XML
+//Fonction de traitement des fichiers FCPCML
 function processXml(xmlContent, fileName, fps = 25) {
     console.log("Début du traitement XML pour le fichier :", fileName);
 
+    // 1. Parse le contenu XML
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xmlContent, "application/xml");
+
+    // Vérification des erreurs de parsing
     if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
         console.error("Erreur de parsing XML :", xmlDoc.getElementsByTagName("parsererror")[0].textContent);
         return;
     }
 
-    const assetClips = xmlDoc.getElementsByTagName("asset-clip");
+    // 2. Identifier la durée totale de la séquence
+    const sequence = xmlDoc.getElementsByTagName("sequence")[0];
+    let sequenceDuration = 0; // En secondes
+    if (sequence && sequence.getAttribute("duration")) {
+        sequenceDuration = parseFraction(sequence.getAttribute("duration"));
+        console.log("Durée totale de la séquence :", sequenceDuration, "secondes");
+    } else {
+        console.warn("Durée de la séquence introuvable. Aucun filtre basé sur la durée ne sera appliqué.");
+    }
+
+    // 3. Recherche des `asset-clip`
+    const assetClips = Array.from(xmlDoc.getElementsByTagName("asset-clip"));
     console.log("Nombre de asset-clip dans le fichier :", assetClips.length);
 
-    const data = [];
+    // 4. Trouver le décalage initial minimal
+    const offsets = assetClips.map(clip => parseFraction(clip.getAttribute("offset") || "0/1s"));
+    const minOffset = Math.min(...offsets); // Décalage minimum trouvé
+    console.log("Décalage initial minimal trouvé :", minOffset, "secondes");
+
+    const data = []; // Contiendra les données extraites
+
+    // 5. Traitement de chaque `asset-clip`
     for (let assetClip of assetClips) {
         const name = cleanText(assetClip.getAttribute("name") || "");
         console.log("Traitement de l'asset :", name);
@@ -262,34 +263,39 @@ function processXml(xmlContent, fileName, fps = 25) {
             continue;
         }
 
-        console.log("Asset musical détecté :", name);
+        // Extraction des attributs
+        const rawOffset = parseFraction(assetClip.getAttribute("offset") || "0/1s");
+        const offsetSeconds = rawOffset - minOffset; // Ajuste l'offset
+        const durationSeconds = parseFraction(assetClip.getAttribute("duration") || "0/1s");
+
+        // Filtrer les clips hors séquence
+        if (sequenceDuration > 0 && offsetSeconds > sequenceDuration) {
+            console.warn(`Clip ignoré car hors séquence (offset : ${offsetSeconds}s, durée : ${sequenceDuration}s) :`, name);
+            continue;
+        }
+
+        // Logs détaillés pour debug
+        console.log(`Nom : ${name}`);
+        console.log(`Offset brut : ${rawOffset}s | Offset ajusté : ${offsetSeconds}s`);
+        console.log(`Durée : ${durationSeconds}s`);
 
         try {
-            // Extraction des timecodes
-            const offsetSeconds = parseFraction(assetClip.getAttribute("offset") || "0/1s");
-            const durationSeconds = parseFraction(assetClip.getAttribute("duration") || "0/1s");
-
-            // Conversion en frames
-            const offsetFrames = Math.round(offsetSeconds * fps);
-            const durationFrames = Math.round(durationSeconds * fps);
-
-            // Calcul des timecodes
-            const tcIn = convertFramesToTimecode(offsetFrames, fps);
-            const tcOut = convertFramesToTimecode(offsetFrames + durationFrames, fps);
-            const durationTimecode = convertFramesToTimecode(durationFrames, fps);
+            // Calcul des TC IN, TC OUT, et de la durée
+            const tcIn = convertFramesToTimecode(Math.round(offsetSeconds * fps), fps);
+            const tcOut = convertFramesToTimecode(Math.round((offsetSeconds + durationSeconds) * fps), fps);
+            const durationTimecode = convertFramesToTimecode(Math.round(durationSeconds * fps), fps);
 
             console.log("Extraction des timecodes pour :", name);
-            console.log("Offset (seconds):", offsetSeconds);
-            console.log("Duration (frames):", durationFrames);
-            console.log("TC IN:", tcIn, "TC OUT:", tcOut, "Duration:", durationTimecode);
+            console.log("TC IN:", tcIn, "TC OUT:", tcOut, "Durée:", durationTimecode);
 
-            // Extraction des informations musicales basiques
-            const { label, album, trackNumber, trackName, artists } = extractMusicInfo(name, fileName.endsWith(".fcpxmld"));
+            // Extraction des informations musicales
+            const { label, album, trackName, artists } = extractMusicInfo(name, fileName.endsWith(".fcpxmld"));
 
+            // Ajout des données au tableau
             data.push({
                 label: label || "Inconnu",
                 albumCode: "Inconnu",
-                albumTitle: "Inconnu",
+                albumTitle: album || "Inconnu",
                 trackTitle: trackName || "Inconnu",
                 artists: artists || "Inconnu",
                 composers: "Inconnu",
@@ -297,16 +303,15 @@ function processXml(xmlContent, fileName, fps = 25) {
                 tcout: tcOut,
                 duration: durationTimecode,
             });
-            console.log("Ligne ajoutée dans les données :", data[data.length - 1]);
         } catch (error) {
-            console.error(`Erreur lors de l'extraction des timecodes pour : ${name}`, error);
+            console.error("Erreur lors du traitement de l'asset :", name, error);
         }
     }
 
+    // 6. Ajout des données à la sortie globale
     if (data.length > 0) {
         globalOutputData.push({ file: fileName, data });
-        console.log("Données musicales extraites et ajoutées :", data);
-        console.log("Données complètes après traitement :", globalOutputData);
+        console.log("Données extraites et ajoutées :", data);
     } else {
         console.warn("Aucune donnée musicale détectée.");
     }

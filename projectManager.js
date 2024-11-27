@@ -7,7 +7,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const mappingList = document.getElementById("mapping-list");
     const addMappingBtn = document.getElementById("add-mapping-btn");
 
-    let importedCsvFiles = []; // Tableau pour stocker plusieurs fichiers CSV et leurs données
+    // Supprime cette ligne, car importedCsvFiles est déjà globalement défini dans globals.js
+    // let importedCsvFiles = []; 
+
     const diffusionMappings = {}; // Correspondances ajoutées
 
     // Affiche un message dans l'interface
@@ -37,42 +39,41 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // Gestion de l'importation de fichiers CSV
+    inputCsv.addEventListener("change", function (event) {
+        const files = event.target.files; // Liste des fichiers sélectionnés
+        if (!files || files.length === 0) {
+            showMessage("Aucun fichier CSV sélectionné.", "warning");
+            return;
+        }
 
-inputCsv.addEventListener("change", function (event) {
-    const files = event.target.files; // Liste des fichiers sélectionnés
-    if (!files || files.length === 0) {
-        showMessage("Aucun fichier CSV sélectionné.", "warning");
-        return;
-    }
+        // Utilise FileReader pour lire chaque fichier CSV sélectionné
+        for (const file of files) {
+            const reader = new FileReader();
 
-    // Utilise FileReader pour lire chaque fichier CSV sélectionné
-    for (const file of files) {
-        const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const csvData = parseCsv(e.target.result); // Parse le contenu CSV
+                    console.log(`Données CSV importées depuis ${file.name} :`, csvData);
 
-        reader.onload = function (e) {
-            try {
-                const csvData = parseCsv(e.target.result); // Parse le contenu CSV
-                console.log(`Données CSV importées depuis ${file.name} :`, csvData);
+                    if (csvData.length > 0) {
+                        // Ajoute chaque fichier et ses données dans le tableau global `importedCsvFiles`
+                        importedCsvFiles.push({
+                            fileName: file.name,
+                            data: csvData,
+                        });
+                        console.log("Fichier CSV ajouté à importedCsvFiles (global) :", file.name, csvData);
 
-                if (csvData.length > 0) {
-                    // Ajoute chaque fichier et ses données dans le tableau `importedCsvFiles`
-                    importedCsvFiles.push({
-                        fileName: file.name,
-                        data: csvData,
-                    });
-                    console.log("Fichier CSV ajouté à importedCsvFiles :", file.name, csvData);
-
-                    showMessage(`Fichier "${file.name}" importé avec ${csvData.length} entrées.`, "success");
-                } else {
-                    showMessage(`Le fichier "${file.name}" est vide ou invalide.`, "warning");
+                        showMessage(`Fichier "${file.name}" importé avec ${csvData.length} entrées.`, "success");
+                    } else {
+                        showMessage(`Le fichier "${file.name}" est vide ou invalide.`, "warning");
+                    }
+                } catch (error) {
+                    console.error(`Erreur lors du parsing CSV pour ${file.name} :`, error);
+                    showMessage(`Erreur lors de l'importation du fichier "${file.name}".`, "error");
                 }
-            } catch (error) {
-                console.error(`Erreur lors du parsing CSV pour ${file.name} :`, error);
-                showMessage(`Erreur lors de l'importation du fichier "${file.name}".`, "error");
-            }
-        };
+            };
 
-        reader.readAsText(file);
+            reader.readAsText(file);
         }
 
         // Mets à jour le bouton pour indiquer combien de fichiers ont été ajoutés
@@ -180,8 +181,6 @@ inputCsv.addEventListener("change", function (event) {
             csvRows: importedCsvFiles.flatMap(file => file.data), // Combine toutes les données CSV pour ce projet
         };
 
-        // Efface les fichiers CSV importés après ajout au projet
-        importedCsvFiles = [];
         updateMappingList();
         showMessage(`Correspondance ajoutée pour ${subject}`, "success");
     });
