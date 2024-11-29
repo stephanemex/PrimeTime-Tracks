@@ -82,27 +82,30 @@
 
         <!-- Interrupteur pour sélectionner le type de fichier -->
         <div class="file-type-switch">
-            <span>Importer :</span>
-            <!-- Conteneur pour le switch -->
+            <span>Type de fichier à importer :</span>
             <label class="switch">
                 <input type="checkbox" id="file-type-toggle">
-                <span class="slider"></span>
+                <span class="slider">
+                    <img id="fcpx-icon" src="img/FCPX-Logo.png" alt="FCPXML" class="switch-icon">
+                    <img id="xmp-icon" src="img/adobe-premiere-pro-logo.png" alt="XMP" class="switch-icon hidden">
+                </span>
             </label>
-            <!-- Icônes en dehors de l'interrupteur -->
-            <img id="fcpx-icon" src="img/FCPX-Logo.png" alt="FCPXML" class="file-icon visible">
-            <img id="xmp-icon" src="img/adobe-premiere-pro-logo.png" alt="XMP" class="file-icon hidden">
         </div>
-
+       
         <!-- Chargement des fichiers -->
         <div class="input-group">
             <input 
                 type="file" 
                 id="input-files" 
                 multiple 
-                accept=".xml,.fcpxml,.fcpxmld" 
+                accept=".xml,.fcpxml,.fcpxmld"
             />
-            <label class="file-upload-label" for="input-files">Sélectionner les fichiers XML</label>
+            <label 
+                class="file-upload-label" 
+                for="input-files"
+                id="file-upload-label">Sélectionner les fichiers FCPXML</label>
         </div>
+
 
         <!-- Bouton d'extraction pour les fichiers .fcpxmld -->
         <button id="extract-btn" style="display: none;">Extraire le fichier .fcpxml</button>

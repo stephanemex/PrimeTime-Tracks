@@ -347,17 +347,12 @@ button {
 }
 
 /* Type de fichiers importés */
-.file-type-switch {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
 .switch {
     position: relative;
     display: inline-block;
     width: 60px;
-    height: 34px;
+    height: 30px;
+    top:-5px;
 }
 
 .switch input {
@@ -373,31 +368,65 @@ button {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: #ccc;
+    background-color: #29a9e5;
     transition: 0.4s;
     border-radius: 34px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-.slider:before {
-    position: absolute;
-    content: "";
-    height: 26px;
-    width: 26px;
-    left: 4px;
-    bottom: 4px;
-    background-color: white;
-    transition: 0.4s;
-    border-radius: 50%;
+.slider img {
+    width: 24px;
+    height: auto;
+    transition: opacity 0.4s ease-in-out;
 }
 
-/* Inputs*/ 
+.slider img.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.slider img.visible {
+    opacity: 1;
+}
+
 input:checked + .slider {
-    background-color: #2196F3;
+    background-color: #aa4bd3;
+}
+
+input:checked + .slider #fcpx-icon {
+    opacity: 0;
+    pointer-events: none;
+}
+
+input:checked + .slider #xmp-icon {
+    opacity: 1;
+    pointer-events: auto;
 }
 
 input:checked + .slider:before {
     transform: translateX(26px);
 }
+
+.input-group {margin-top: 20px;}
+
+.file-upload-label {
+    display: inline-block;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: bold;
+    color: white;
+    background-color: #2196F3;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.file-upload-label:hover {
+    background-color: #1e88e5;
+}
+
 
 /* Icônes */
 .file-icon {
@@ -446,26 +475,42 @@ input:checked + .slider:before {
     margin-top: 25px;
 }
 
+/* Style général pour le tableau de l'aperçu */
 .preview-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 20px;
-    table-layout: fixed;
-}
-
-.preview-table th, .preview-table td {
-    padding: 12px 15px;
+    margin: 20px 0;
+    font-size: 16px;
     text-align: left;
-    border: 1px solid #ddd;
-    white-space: normal; /* Permettre le retour à la ligne si nécessaire */
-    word-wrap: break-word; /* Retour à la ligne automatique pour éviter le débordement */
 }
 
+/* Style des en-têtes */
 .preview-table th {
-    background-color: #6FA1B6;
-    color: #fff;
-    font-weight: bold;
+    background-color: #6FA1B6; /* Bleu pour l'en-tête */
+    color: white;
+    padding: 10px;
 }
+
+/* Style des cellules de données */
+.preview-table td {
+    padding: 10px;
+    border: 1px solid #ddd; /* Bordure légère */
+}
+
+/* Alternance des lignes */
+.preview-table tr:nth-child(even) {
+    background-color: #f9f9f9; /* Gris clair */
+}
+
+.preview-table tr:nth-child(odd):not(:first-child) {
+    background-color: #d6e9ff; /* Bleu clair similaire à l'entête */
+}
+
+/* Bordure extérieure pour le tableau */
+.preview-table {
+    border: 2px solid #6FA1B6; /* Bleu pour la bordure */
+}
+
 
 #mapping-section {
     margin-top: 20px;

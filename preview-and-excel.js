@@ -1,20 +1,26 @@
 // Normalise une chaîne pour la rendre comparable
 function normalizeString(str) {
-    return str.toLowerCase().replace(/[^a-z0-9]/gi, ''); // Supprime les caractères non alphanumériques
+    return str
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/gi, '') // Supprime les caractères spéciaux
+        .replace(/\s+/g, ' ') // Remplace les espaces multiples par un seul espace
+        .trim(); // Supprime les espaces en début/fin
 }
 
 // Vérifie une correspondance partielle entre deux chaînes
 function partialMatch(csvTitle, fcpxmlTitle) {
     const csvWords = csvTitle.split(/[^a-z0-9]+/); // Découpe le titre CSV en mots
-    return csvWords.every((word) => fcpxmlTitle.includes(word)); // Vérifie si chaque mot est dans le titre FCPXML
+    console.log(`Comparaison des mots du CSV : ${csvWords} avec le titre FCPXML : ${fcpxmlTitle}`);
+    const result = csvWords.every((word) => fcpxmlTitle.includes(word)); // Vérifie si chaque mot est présent
+    console.log(`Résultat de la correspondance pour "${csvTitle}" : ${result}`);
+    return result;
 }
+
 
 /**
  * Enrichissement des données par les fichiers CSV importés.
  * Cette fonction compare les données extraites d'un fichier XML avec les données importées
  * depuis un ou plusieurs fichiers CSV pour compléter les informations manquantes.
- * 
- * @param {Array} outputData - Données extraites des fichiers XML.
  */
 function enrichWithMappings(outputData) {
     if (!outputData || outputData.length === 0) {
@@ -29,7 +35,7 @@ function enrichWithMappings(outputData) {
     }
 
     // Combine tous les fichiers CSV importés en un seul tableau
-    const allCsvData = importedCsvFiles.flatMap(file => file.data); // Fusionne toutes les données CSV
+    const allCsvData = importedCsvFiles.flatMap(file => file.data);
     if (allCsvData.length === 0) {
         console.warn("Les fichiers CSV importés ne contiennent aucune donnée.");
         return;
@@ -40,30 +46,20 @@ function enrichWithMappings(outputData) {
     // Parcours des données extraites pour les enrichir avec les informations des CSV
     outputData.forEach(project => {
         project.data.forEach(track => {
-            const normalizedTrackTitle = normalizeString(track.trackTitle || ""); // Normalise le titre du track
-            console.log("Recherche de correspondance pour :", normalizedTrackTitle);
-
-            // Recherche une correspondance dans les données CSV combinées
+            const normalizedTrackTitle = normalizeString(track.trackTitle || "");
             const csvMatch = allCsvData.find(row => {
                 const normalizedCsvTitle = normalizeString(row["Track Title"] || "");
                 return partialMatch(normalizedCsvTitle, normalizedTrackTitle);
             });
 
             if (csvMatch) {
-                console.log("Correspondance trouvée dans CSV :", csvMatch);
-
-                // Mise à jour des champs pour le track avec les données du CSV
                 track.label = csvMatch["Label"] || "Inconnu";
                 track.albumCode = csvMatch["Album Code"] || "Inconnu";
                 track.albumTitle = csvMatch["Album Title"] || "Inconnu";
-                track.trackTitle = csvMatch["Track Title"] || track.trackTitle; // Si absent, garde l'original
+                track.trackTitle = csvMatch["Track Title"] || track.trackTitle;
                 track.artists = csvMatch["Artist(s)"] || "Inconnu";
                 track.composers = csvMatch["Composer(s)"] || "Inconnu";
-
-                // Formate la durée pour tronquer les frames (passage à HH:MM:SS uniquement)
                 track.duration = formatDurationToSeconds(track.duration);
-            } else {
-                console.warn("Pas de correspondance trouvée pour :", normalizedTrackTitle);
             }
         });
     });
@@ -72,31 +68,42 @@ function enrichWithMappings(outputData) {
 }
 
 /**
+ * Permet l'édition des cellules dans le tableau d'aperçu.
+ * Les modifications sont sauvegardées directement dans `globalOutputData`.
+ */
+function enableTableEditing(table, projectIndex) {
+    table.querySelectorAll("td").forEach((cell, cellIndex) => {
+        cell.contentEditable = true; // Rendre chaque cellule éditable
+        cell.addEventListener("blur", () => {
+            const rowIndex = cell.parentElement.rowIndex - 1; // Ajuste pour ignorer la ligne d'en-tête
+            const headers = ["label", "albumCode", "albumTitle", "trackTitle", "artists", "composers", "tcin", "tcout", "duration"];
+            const key = headers[cellIndex];
+
+            // Met à jour globalOutputData avec la nouvelle valeur
+            globalOutputData[projectIndex].data[rowIndex][key] = cell.innerText.trim();
+        });
+    });
+}
+
+/**
  * Affichage de l'aperçu des données dans le tableau HTML.
- * Cette fonction crée dynamiquement un tableau pour chaque projet ou fichier importé.
- * 
- * @param {string} projectName - Nom du projet en cours d'affichage.
  */
 function displayPreview(projectName) {
     console.log("Affichage de l'aperçu pour le projet :", projectName);
     const previewContainer = document.getElementById("preview");
-    previewContainer.innerHTML = ""; // Réinitialise le contenu du conteneur
+    previewContainer.innerHTML = "";
 
-    // Vérifie si des données sont disponibles
     if (!globalOutputData || globalOutputData.length === 0) {
         const noDataMessage = document.createElement("p");
         noDataMessage.innerText = "Aucune donnée disponible pour l'aperçu.";
         previewContainer.appendChild(noDataMessage);
         return;
     }
-    console.log("Données reçues pour l'affichage :", globalOutputData);
 
-    // Création de sections pour chaque fichier projet
-    globalOutputData.forEach((item) => {
+    globalOutputData.forEach((item, projectIndex) => {
         const projectSection = document.createElement("div");
         projectSection.className = "project-section";
 
-        // Titre du fichier projet
         const projectTitle = document.createElement("h3");
         projectTitle.innerText = `Fichier : ${item.file}`;
         projectSection.appendChild(projectTitle);
@@ -104,17 +111,8 @@ function displayPreview(projectName) {
         const table = document.createElement("table");
         table.className = "preview-table";
 
-        // Ajout des en-têtes du tableau
         const headers = [
-            "Label",
-            "Album Code",
-            "Album Title",
-            "Track Title",
-            "Artist(s)",
-            "Composer(s)",
-            "TC IN",
-            "TC OUT",
-            "Durée",
+            "Label", "Album Code", "Album Title", "Track Title", "Artist(s)", "Composer(s)", "TC IN", "TC OUT", "Durée"
         ];
         const headerRow = table.insertRow();
         headers.forEach((header) => {
@@ -123,9 +121,7 @@ function displayPreview(projectName) {
             headerRow.appendChild(th);
         });
 
-        // Ajout des données dans le tableau
         item.data.forEach((row) => {
-            console.log("Données de la ligne :", row);
             const dataRow = table.insertRow();
             const mappings = {
                 "Label": "label",
@@ -141,36 +137,35 @@ function displayPreview(projectName) {
 
             headers.forEach((header) => {
                 const cell = dataRow.insertCell();
-
-                // Pour les durées, appliquer le formatage HH:MM:SS si ce n'est pas encore fait
-                if (header === "Durée") {
-                    cell.innerText = formatDurationToSeconds(row[mappings[header]] || "00:00:00:00");
-                } else {
-                    cell.innerText = row[mappings[header]] || "Inconnu";
-                }
+            
+                // Vérifie si la valeur a été enrichie
+                const value = row[mappings[header]] || "Inconnu";
+                cell.innerText = header === "Durée" ? formatDurationToSeconds(value) : value;
             });
         });
 
-        // Ajoute le tableau à la section projet
+        enableTableEditing(table, projectIndex); // Rendre le tableau éditable
         projectSection.appendChild(table);
         previewContainer.appendChild(projectSection);
     });
 
-    // Affiche le bouton de téléchargement si des données sont présentes
     document.getElementById("download-btn").style.display = "inline-block";
 }
 
 /**
- * Convertit une durée en HH:MM:SS en supprimant les frames
- * @param {string} timecode - Durée au format HH:MM:SS:FF
- * @returns {string} - Durée tronquée au format HH:MM:SS
+ * Convertit une durée en HH:MM:SS en supprimant les frames.
+ * @param {string} timecode - Durée au format HH:MM:SS:FF.
+ * @returns {string} - Durée tronquée au format HH:MM:SS.
  */
 function formatDurationToSeconds(timecode) {
     const [hh, mm, ss] = timecode.split(":"); // Ignore les frames (FF)
     return `${hh}:${mm}:${ss}`; // Retourne uniquement HH:MM:SS
 }
 
-// Génération du fichier Excel
+
+/**
+ * Génération du fichier Excel basé sur le tableau enrichi et édité.
+ */
 async function generateExcel(projectName) {
     console.log("Génération du fichier Excel pour :", projectName);
     console.log("Données dans globalOutputData :", globalOutputData);
@@ -178,24 +173,42 @@ async function generateExcel(projectName) {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Droits Musicaux");
 
+    // Titre principal du fichier Excel
     worksheet.mergeCells("A1:C1");
     worksheet.getCell("A1").value = "Droits Musicaux - Aperçu";
     worksheet.getCell("A1").font = { bold: true, size: 16 };
     worksheet.getCell("A1").alignment = { horizontal: "center" };
 
+    // En-têtes du tableau
     const headers = ["Label", "Album Code", "Album Title", "Track Title", "Artist(s)", "Composer(s)", "TC IN", "TC OUT", "Durée"];
     worksheet.addRow(headers).font = { bold: true };
 
+    // Parcours de chaque projet/fichier dans `globalOutputData`
     globalOutputData.forEach((item) => {
+        // Ajout du titre du fichier en tant que section
         worksheet.addRow([`Fichier : ${item.file}`]).font = { italic: true };
 
+        // Ajout des données de chaque track
         item.data.forEach((row) => {
-            worksheet.addRow(headers.map((header) => row[header.toLowerCase()] || "Inconnu"));
+            // Récupère les données pour chaque colonne en s'assurant qu'elles correspondent à l'affichage HTML
+            worksheet.addRow([
+                row.label || "Inconnu",
+                row.albumCode || "Inconnu",
+                row.albumTitle || "Inconnu",
+                row.trackTitle || "Inconnu",
+                row.artists || "Inconnu",
+                row.composers || "Inconnu",
+                row.tcin || "Inconnu",
+                row.tcout || "Inconnu",
+                row.duration || "Inconnu"
+            ]);
         });
 
-        worksheet.addRow([]); // Ligne vide entre les sections
+        // Ajoute une ligne vide entre chaque fichier pour une meilleure lisibilité
+        worksheet.addRow([]);
     });
 
+    // Génération et téléchargement du fichier Excel
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
     const url = URL.createObjectURL(blob);
@@ -208,12 +221,10 @@ async function generateExcel(projectName) {
 
 // Gestion des boutons
 document.getElementById("process-btn").addEventListener("click", function () {
-    console.log("Génération de l'aperçu demandée.");
-    enrichWithMappings(globalOutputData, globalCsvData);
+    enrichWithMappings(globalOutputData);
     displayPreview("Projet en cours");
 });
 
 document.getElementById("download-btn").addEventListener("click", function () {
-    console.log("Téléchargement du fichier Excel demandé.");
     generateExcel("Projet en cours");
 });

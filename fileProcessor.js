@@ -4,51 +4,44 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Références aux éléments HTML
     const fileInput = document.getElementById("input-files");
-    const uploadLabel = document.querySelector(".file-upload-label");
+    const uploadLabel = document.getElementById("file-upload-label");
     const extractBtn = document.getElementById("extract-btn");
-    const processBtn = document.getElementById("process-btn");
     const toggle = document.getElementById("file-type-toggle");
     const fcpxIcon = document.getElementById("fcpx-icon");
     const xmpIcon = document.getElementById("xmp-icon");
 
-    // Mode sélectionné (par défaut : FCPXML)
-    let selectedMode = "fcpxml";
-
-    // **Gestion du changement de mode avec l'interrupteur**
-    toggle.addEventListener("change", () => {
+    // Gestion des types de fichiers et des icônes en fonction du toggle
+    function updateUIBasedOnToggle() {
         if (toggle.checked) {
-            selectedMode = "xmp"; // Mode XMP sélectionné
-            fileInput.accept = ".xmp"; // Types de fichiers acceptés
-            
-            // Masquer l'icône FCPXML et afficher l'icône XMP
+            // Mode XMP activé
+            uploadLabel.textContent = "Sélectionner les fichiers XMP";
+            fileInput.setAttribute("accept", ".xmp");
             fcpxIcon.classList.add("hidden");
             xmpIcon.classList.remove("hidden");
             console.log("Mode sélectionné : XMP");
         } else {
-            selectedMode = "fcpxml"; // Mode FCPXML sélectionné
-            fileInput.accept = ".xml,.fcpxml,.fcpxmld"; // Types de fichiers acceptés
-            
-            // Masquer l'icône XMP et afficher l'icône FCPXML
+            // Mode FCPXML activé
+            uploadLabel.textContent = "Sélectionner les fichiers FCPXML";
+            fileInput.setAttribute("accept", ".xml,.fcpxml,.fcpxmld");
             xmpIcon.classList.add("hidden");
             fcpxIcon.classList.remove("hidden");
             console.log("Mode sélectionné : FCPXML");
         }
 
-        // Réinitialiser l'état des fichiers
         resetFileInputState();
-    });
+    }
 
-    // **Réinitialise l'état du champ de fichier**
+    // Réinitialise l'état du champ de fichier
     function resetFileInputState() {
-        fileInput.value = "";
+        fileInput.value = ""; // Vide l'input
         uploadLabel.textContent = "Sélectionner les fichiers";
         uploadLabel.classList.remove("uploaded");
         extractBtn.style.display = "none"; // Masque le bouton d'extraction
     }
 
-    // **Gestion de la sélection de fichier**
+    // Gestion des fichiers sélectionnés
     fileInput.addEventListener("change", async () => {
-        const file = fileInput.files[0];
+        const file = fileInput.files[0]; // Premier fichier sélectionné
         const fileName = file ? file.name : "";
 
         console.log("Fichier sélectionné :", file);
@@ -59,19 +52,24 @@ document.addEventListener("DOMContentLoaded", function () {
             uploadLabel.classList.add("uploaded");
 
             // Vérification selon le mode sélectionné
-            if (selectedMode === "fcpxml") {
-                handleFcpxmlFile(file, fileName);
-            } else if (selectedMode === "xmp") {
-                handleXmpFile(file, fileName);
+            if (toggle.checked) {
+                handleXmpFile(file, fileName); // Mode XMP
             } else {
-                console.warn("Mode sélectionné inconnu :", selectedMode);
-                uploadLabel.textContent = "Mode inconnu ou fichier incompatible";
+                handleFcpxmlFile(file, fileName); // Mode FCPXML
             }
         } else {
             console.log("Aucun fichier sélectionné");
             resetFileInputState();
         }
     });
+
+    // Gestion du toggle : met à jour l'interface
+    toggle.addEventListener("change", updateUIBasedOnToggle);
+
+    // Initialisation : ajuste l'interface selon l'état initial du toggle
+    updateUIBasedOnToggle();
+
+    console.log("Gestionnaire de fichiers FCPXML/XMP prêt.");
 
     // **Traitement spécifique pour les fichiers FCPXML**
     async function handleFcpxmlFile(file, fileName) {
@@ -116,6 +114,33 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
+    // **Gestion du bouton d'extraction**
+    extractBtn.addEventListener("click", async function () {
+        console.log("Bouton d'extraction cliqué");
+        const file = fileInput.files[0];
+        if (file && (file.name.endsWith(".fcpxmld") || file.name.endsWith(".fcpxmld.zip"))) {
+            console.log("Fichier .fcpxmld valide sélectionné :", file.name);
+            try {
+                const xmlContent = await extractFcpxmlFromPackage(file);
+                if (xmlContent) {
+                    console.log("Contenu FCPXML extrait avec succès (premiers 200 caractères) :", xmlContent.substring(0, 200));
+                    showMessage("Extraction réussie ! Vous pouvez maintenant générer l'aperçu.", "success");
+                    processXml(xmlContent, file.name); // Appelle la fonction de traitement FCPXML
+                } else {
+                    console.error("Échec de l'extraction du contenu FCPXML");
+                    showMessage("Échec de l'extraction du fichier FCPXML. Veuillez vérifier le fichier.", "error");
+                }
+            } catch (error) {
+                console.error("Erreur lors de l'extraction :", error);
+                showMessage("Erreur lors de l'extraction du fichier FCPXML : " + error.message, "error");
+            }
+        } else {
+            console.error("Fichier invalide ou non sélectionné :", file ? file.name : "aucun fichier");
+            showMessage("Veuillez sélectionner un fichier .fcpxmld ou .fcpxmld.zip valide.", "error");
+        }
+    });
+});
+
     // **Fusionne toutes les données des fichiers CSV**
     function combineCsvData(importedCsvFiles) {
         return importedCsvFiles.flatMap(file => file.data); // Fusionne les données
@@ -142,7 +167,6 @@ document.addEventListener("DOMContentLoaded", function () {
     } else {
         console.error("Bouton d'aperçu (processBtn) non trouvé dans le DOM.");
     }
-
     console.log("Gestionnaire de fichiers FCPXML prêt.");
 
     // Extraction automatique du contenu FCPXML depuis .fcpxmld
@@ -180,7 +204,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     console.log("Gestionnaire de fichiers FCPXML prêt.");
-});
 
 // Fonction pour afficher des messages
 function showMessage(message, type = "info") {
@@ -361,6 +384,24 @@ function couldBeMusicAsset(name) {
 
 // Extraire des informations musicales d'un nom d'asset
 function extractMusicInfo(name, isFcpxmld) {
+    // Nettoyage des caractères indésirables
+    name = name.replace(/_/g, " ").trim();
+
+    // Expression régulière pour détecter des informations structurées (ex. Label - Album - TrackName - Artists)
+    const regex = /^(.*?)\s-\s(.*?)\s-\s(.*?)\s-\s(.*?)$/;
+
+    // Si le nom correspond à la structure, extraire les parties
+    const match = name.match(regex);
+    if (match) {
+        return {
+            label: match[1] || "Inconnu",
+            album: match[2] || "Inconnu",
+            trackName: match[3] || "Inconnu",
+            artists: match[4] || "Inconnu",
+        };
+    }
+
+    // Sinon, utiliser un découpage basique
     const parts = name.split(isFcpxmld ? "_" : "-");
     return {
         label: parts[0] || "Inconnu",
@@ -370,6 +411,7 @@ function extractMusicInfo(name, isFcpxmld) {
         artists: parts.slice(4).join(" ") || "Inconnu",
     };
 }
+
 
 // Convertit des frames en timecode (HH:MM:SS:Frames)
 function convertFramesToTimecode(totalFrames, fps = 25) {
