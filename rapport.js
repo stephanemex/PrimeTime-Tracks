@@ -1,95 +1,159 @@
-// Fonction pour afficher les messages dans l'interface avec style infobulle
+// Fonction pour afficher les messages dans l'interface
 function showMessage(message, type = 'info') {
     const messageContainer = document.getElementById('message');
     messageContainer.innerHTML = message;
     messageContainer.className = `message ${type}`;
-    messageContainer.style.display = 'block';  // Rendre le message visible
+    messageContainer.style.display = 'block'; // Rendre le message visible
 }
 
+// Gestion de la sélection des fichiers
 document.getElementById('directory-input').addEventListener('change', function () {
     const files = this.files;
 
-    let validFiles = Array.from(files).filter(file => !file.name.startsWith('~$')); // Filtrer les fichiers temporaires
+    // Filtrer les fichiers valides
+    let validFiles = Array.from(files).filter(file => !file.name.startsWith('~$') && file.name.endsWith('.xlsx'));
 
     const directoryUploadLabel = document.getElementById('directory-upload-label');
     const processButton = document.getElementById('process-btn');
     const messageContainer = document.getElementById('message');
 
     if (validFiles.length > 0) {
-        // Afficher le nom du répertoire sélectionné et changer la couleur du bouton
         const directoryName = validFiles[0].webkitRelativePath.split("/")[0];
         directoryUploadLabel.innerText = `Répertoire sélectionné : ${directoryName}`;
-        directoryUploadLabel.style.backgroundColor = '#4CAF50';  // Couleur verte
-        processButton.style.display = 'inline-block';  // Afficher le bouton de traitement
+        directoryUploadLabel.style.backgroundColor = '#4CAF50'; // Couleur verte
+        processButton.style.display = 'inline-block'; // Afficher le bouton de traitement
 
-        // Afficher la liste des fichiers dans la section des messages
         let fileList = "<strong>Fichiers chargés pour le traitement :</strong><br><ul>";
-        for (let i = 0; i < validFiles.length; i++) {
-            fileList += `<li>${validFiles[i].name}</li>`;
-        }
+        validFiles.forEach(file => {
+            fileList += `<li>${file.name}</li>`;
+        });
         fileList += "</ul>";
-        showMessage(fileList, 'info');  // Utiliser le style "info" défini par le CSS
+        showMessage(fileList, 'info');
     } else {
         directoryUploadLabel.innerText = 'Choisir un répertoire';
-        directoryUploadLabel.style.backgroundColor = '';  // Réinitialiser la couleur du bouton
-        processButton.style.display = 'none';  // Cacher le bouton de traitement
-        messageContainer.innerHTML = '';  // Réinitialiser le message en cas d'annulation
+        directoryUploadLabel.style.backgroundColor = ''; // Réinitialiser la couleur
+        processButton.style.display = 'none'; // Cacher le bouton
+        messageContainer.innerHTML = ''; // Réinitialiser le message
     }
 });
 
+// Gestion du traitement des fichiers
 document.getElementById('process-btn').addEventListener('click', async function () {
     const directoryInput = document.getElementById('directory-input');
     const files = directoryInput.files;
 
-    let validFiles = Array.from(files).filter(file => !file.name.startsWith('~$')); // Filtrer les fichiers temporaires
+    // Filtrer les fichiers valides
+    let validFiles = Array.from(files).filter(file => !file.name.startsWith('~$') && file.name.endsWith('.xlsx'));
 
     if (!validFiles.length) {
         showMessage("Aucun fichier Excel valide trouvé dans le répertoire.", "error");
         return;
     }
 
-    // Activation de la barre de progression
     const progressBar = document.getElementById('progress-bar');
     const progressContainer = progressBar.parentElement;
-    progressBar.style.width = '0%'; 
-    progressContainer.style.display = 'block';  // Afficher la barre de progression
+    progressBar.style.width = '0%';
+    progressContainer.style.display = 'block'; // Afficher la barre de progression
 
     const combinedWorkbook = new ExcelJS.Workbook();
     const combinedWorksheet = combinedWorkbook.addWorksheet('Rapport Combiné');
 
-    combinedWorksheet.mergeCells('A1:J1');
-    combinedWorksheet.getCell('A1').value = "Déclaration de droits musicaux";
-    combinedWorksheet.getCell('A1').font = { size: 24, bold: true, color: { argb: 'FFFFFFFF' } };
-    combinedWorksheet.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
-    combinedWorksheet.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6FA1B6' } };
+    // Titre principal du rapport combiné
+    combinedWorksheet.mergeCells('A1:I1');
+    const mainTitle = combinedWorksheet.getCell('A1');
+    mainTitle.value = "Déclaration de droits musicaux combinée";
+    mainTitle.font = { size: 24, bold: true, color: { argb: 'FFFFFFFF' } };
+    mainTitle.alignment = { vertical: 'middle', horizontal: 'center' };
+    mainTitle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6FA1B6' } };
     combinedWorksheet.getRow(1).height = 40;
 
     let currentRow = 2;
-    let progressStep = 100 / validFiles.length; // Calcul de la progression par fichier
+    const progressStep = 100 / validFiles.length;
+
+    const previewContainer = document.getElementById('preview');
+    previewContainer.innerHTML = ''; // Réinitialiser l’aperçu HTML
 
     for (let i = 0; i < validFiles.length; i++) {
         const file = validFiles[i];
 
-        // Ignorer les fichiers temporaires ou cachés qui commencent par '~$'
-        if (file.name.startsWith('~$') || !file.name.endsWith('.xlsx')) {
-            showMessage(`Le fichier ${file.name} est ignoré car il est invalide ou temporaire.`, "warning");
-            continue;
-        }
-
         try {
             const arrayBuffer = await file.arrayBuffer();
             const workbook = await new ExcelJS.Workbook().xlsx.load(arrayBuffer);
-            const worksheet = workbook.worksheets[0]; // Prendre la première feuille
+            const worksheet = workbook.getWorksheet(1);
 
-            worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
-                const firstCell = row.getCell(1).value;
+            // Récupérer les métadonnées
+            const producer = worksheet.getCell('B1').value || "Non spécifié";
+            const show = worksheet.getCell('B2').value || "Non spécifié";
+            const subject = worksheet.getCell('B3').value || "Non spécifié";
+            const broadcastCount = worksheet.getCell('B4').value || "Non spécifié";
+            const date = worksheet.getCell('B5').value || "Non spécifié";
 
-                // Éviter d'ajouter les lignes contenant le message de contact
-                if (typeof firstCell === 'string' && firstCell.includes('Pour toute question')) {
-                    return; // Ne pas ajouter cette ligne
+            // Ajouter un bloc HTML avec les métadonnées
+            const metaContainer = document.createElement('div');
+            metaContainer.classList.add('meta-container');
+            metaContainer.innerHTML = `
+                <h3 style="color: #003366;">Musiques Utilisées pour le projet ${show} - ${subject}</h3>
+                <p><strong>Producteur :</strong> ${producer}</p>
+                <p><strong>Émission :</strong> ${show}</p>
+                <p><strong>Sujet :</strong> ${subject}</p>
+                <p><strong>Diffusions :</strong> ${broadcastCount}</p>
+                <p><strong>Date :</strong> ${date}</p>
+            `;
+            previewContainer.appendChild(metaContainer);
+
+            // Ajouter les métadonnées au rapport Excel
+            const metaEntries = [
+                ["Producteur", producer],
+                ["Émission", show],
+                ["Sujet", subject],
+                ["Diffusions", broadcastCount],
+                ["Date", date],
+            ];
+            metaEntries.forEach(([key, value]) => {
+                const metaRow = combinedWorksheet.addRow([`${key}:`, value]);
+                metaRow.getCell(1).font = { bold: true };
+                metaRow.getCell(2).font = { italic: true };
+                metaRow.getCell(1).alignment = { horizontal: "right" };
+                metaRow.getCell(2).alignment = { horizontal: "left" };
+                metaRow.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFB0C4DE" } };
+            });
+
+            combinedWorksheet.addRow([]);
+
+            // Ajouter le titre du projet dans Excel
+            const titleRow = combinedWorksheet.addRow([`Musiques Utilisées pour le projet ${show} - ${subject}`]);
+            combinedWorksheet.mergeCells(`A${titleRow.number}:I${titleRow.number}`);
+            titleRow.font = { bold: true, size: 16, color: { argb: "FFFFFFFF" } };
+            titleRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF003366" } };
+            titleRow.alignment = { horizontal: "center", vertical: "middle" };
+
+            currentRow++;
+
+            // Ajouter les données musicales et exclure le footer
+            const table = document.createElement('table');
+            table.classList.add('preview-table');
+
+            let footerFound = false;
+            worksheet.eachRow((row, rowNumber) => {
+                const rowValues = row.values.filter(v => v);
+                const isFooter = rowValues.some(value =>
+                    typeof value === 'string' &&
+                    (value.includes("Document extrait de") || value.includes("Développée par"))
+                );
+
+                if (footerFound || isFooter) {
+                    footerFound = true; // Stop processing once footer is found
+                    return;
                 }
 
-                if (rowNumber >= 6) { // Commencer à la ligne 6
+                if (rowNumber > 7) { // Ignorer les métadonnées et titres
+                    const dataRow = table.insertRow();
+                    row.eachCell((cell, colNumber) => {
+                        const cellElement = dataRow.insertCell();
+                        cellElement.contentEditable = true;
+                        cellElement.innerText = cell.value || '';
+                    });
+
                     const newRow = combinedWorksheet.getRow(currentRow);
                     row.eachCell((cell, colNumber) => {
                         newRow.getCell(colNumber).value = cell.value;
@@ -98,69 +162,45 @@ document.getElementById('process-btn').addEventListener('click', async function 
                 }
             });
 
-            // Ajouter une ligne vide entre les sujets
-            currentRow++;
+            previewContainer.appendChild(table);
+            combinedWorksheet.addRow([]);
 
         } catch (error) {
             console.error(`Erreur lors du traitement du fichier ${file.name}:`, error);
             showMessage(`Erreur lors du traitement du fichier ${file.name}.`, "error");
         }
 
-        // Mettre à jour la barre de progression
         progressBar.style.width = `${(i + 1) * progressStep}%`;
     }
 
-    // Ajouter une seule fois le texte de contact à la fin du rapport combiné
-    const contactRow = combinedWorksheet.addRow(['Pour toute question, veuillez contacter : email@exemple.com']);
-    combinedWorksheet.mergeCells(`A${contactRow.number}:J${contactRow.number}`);
-    contactRow.getCell(1).font = { italic: true, color: { argb: 'FF6FA1B6' } };
+    // Ajouter un footer global
+    const footerMessage1 = "Document combiné extrait de l'application PrimeTime Tracks";
+    const footerMessage2 = "Développée par Stéphane Mex - Contact : stephane.mex@lemanbleu.ch";
 
-    // Affichage de l'aperçu dans une table HTML éditable avant téléchargement, sans titre ni message de contact
-    displayPreview(combinedWorkbook);
+    combinedWorksheet.addRow([]);
+    const footerRow1 = combinedWorksheet.addRow([footerMessage1]);
+    combinedWorksheet.mergeCells(`A${footerRow1.number}:I${footerRow1.number}`);
+    footerRow1.getCell(1).font = { italic: true, color: { argb: 'FF6FA1B6' } };
+    footerRow1.getCell(1).alignment = { horizontal: "center", vertical: "middle" };
 
-    // Garder la barre de progression affichée et mettre à jour le message sous le tableau
-    showMessage("Rapport combiné généré avec succès !", "success");
-});
+    const footerRow2 = combinedWorksheet.addRow([footerMessage2]);
+    combinedWorksheet.mergeCells(`A${footerRow2.number}:I${footerRow2.number}`);
+    footerRow2.getCell(1).font = { italic: true, color: { argb: 'FF6FA1B6' } };
+    footerRow2.getCell(1).alignment = { horizontal: "center", vertical: "middle" };
 
-function displayPreview(workbook) {
-    const previewContainer = document.getElementById('preview');
-    previewContainer.innerHTML = ''; // Réinitialiser le contenu précédent
+    showMessage("Rapport combiné généré avec succès ! Cliquez sur 'Télécharger le fichier' pour sauvegarder.", "success");
 
-    const worksheet = workbook.getWorksheet(1); // Utiliser la première feuille de calcul
-    const table = document.createElement('table');
-    table.classList.add('preview-table');
-
-    worksheet.eachRow((row, rowNumber) => {
-        if (rowNumber === 1 || rowNumber === worksheet.lastRow.number) {
-            return; // Ne pas afficher la première ligne (titre) ni la dernière (message de contact)
-        }
-        const dataRow = table.insertRow();
-        row.eachCell((cell, colNumber) => {
-            const cellElement = dataRow.insertCell();
-            cellElement.contentEditable = true; // Rendre chaque cellule éditable
-            cellElement.innerText = cell.value || '';
-            cellElement.addEventListener('input', function () {
-                row.getCell(colNumber).value = cellElement.innerText;
-            });
-        });
-    });
-
-    previewContainer.appendChild(table);
-
-    // Ajouter un bouton pour télécharger le fichier après édition
+    // Ajouter un bouton pour télécharger le fichier Excel
     const downloadBtn = document.createElement('button');
-    downloadBtn.innerText = 'Télécharger le rapport combiné';
-    downloadBtn.classList.add('download-btn');
+    downloadBtn.innerText = 'Télécharger le fichier Excel';
     downloadBtn.addEventListener('click', async function () {
-        const buffer = await workbook.xlsx.writeBuffer();
+        const buffer = await combinedWorkbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        const url = window.URL.createObjectURL(blob);
+        const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `rapport_combiné_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        a.download = `rapport_combine_${new Date().toISOString().slice(0, 10)}.xlsx`;
         a.click();
-        window.URL.revokeObjectURL(url);
     });
-
     previewContainer.appendChild(downloadBtn);
-}
+});

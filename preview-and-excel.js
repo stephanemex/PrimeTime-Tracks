@@ -16,6 +16,46 @@ function partialMatch(csvTitle, fcpxmlTitle) {
     return result;
 }
 
+// --- Fonction pour préparer les métadonnées ---
+function getProjectMeta() {
+    // Log pour vérifier l'état actuel de diffusionMappings
+    console.log("diffusionMappings (global) :", diffusionMappings);
+
+    // Récupère dynamiquement le sujet depuis un champ texte (exemple : un champ <input id="project-name">)
+    const selectedSubject = document.getElementById("project-name").value.trim();
+
+    // Vérifie si le champ texte est vide
+    if (!selectedSubject) {
+        console.error("Le champ 'Sujet' (project-name) est vide.");
+        alert("Erreur : Veuillez saisir un sujet dans le champ correspondant.");
+        return null;
+    }
+
+    // Log pour confirmer le sujet sélectionné
+    console.log("Sujet sélectionné :", selectedSubject);
+
+    // Récupère les métadonnées associées au sujet dans diffusionMappings
+    const mapping = diffusionMappings[selectedSubject]; // Recherche la correspondance
+
+    // Si aucune correspondance n'est trouvée, afficher une erreur
+    if (!mapping) {
+        console.error(`Aucune correspondance trouvée pour le sujet : "${selectedSubject}"`);
+        alert(`Erreur : Aucune correspondance trouvée pour le sujet "${selectedSubject}".`);
+        return null;
+    }
+
+    // Log pour confirmer les métadonnées récupérées
+    console.log(`Métadonnées trouvées pour "${selectedSubject}" :`, mapping);
+
+    // Retourne les métadonnées au format attendu
+    return {
+        producer: mapping.producerName || "Non spécifié", // Producteur
+        show: mapping.showName || "Non spécifié", // Émission
+        subject: selectedSubject, // Sujet (issu du champ utilisateur)
+        broadcastCount: mapping.broadcastCount || 0, // Nombre de diffusions
+        date: mapping.projectDate || "Non spécifié", // Date du projet
+    };
+}
 
 /**
  * Enrichissement des données par les fichiers CSV importés.
@@ -162,36 +202,69 @@ function formatDurationToSeconds(timecode) {
     return `${hh}:${mm}:${ss}`; // Retourne uniquement HH:MM:SS
 }
 
-
-/**
- * Génération du fichier Excel basé sur le tableau enrichi et édité.
- */
-async function generateExcel(projectName) {
+//Fonction Pour créer le ficheir Excel 
+async function generateExcel(projectName, projectMeta) {
     console.log("Génération du fichier Excel pour :", projectName);
     console.log("Données dans globalOutputData :", globalOutputData);
 
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Droits Musicaux");
+    const worksheet = workbook.addWorksheet("Musiques Utilisées");
 
-    // Titre principal du fichier Excel
-    worksheet.mergeCells("A1:C1");
-    worksheet.getCell("A1").value = "Droits Musicaux - Aperçu";
-    worksheet.getCell("A1").font = { bold: true, size: 16 };
-    worksheet.getCell("A1").alignment = { horizontal: "center" };
+    // --- MÉTADONNÉES ---
+    const metaEntries = [
+        ["Producteur", projectMeta.producer],
+        ["Émission", projectMeta.show],
+        ["Sujet", projectMeta.subject],
+        ["Diffusions", projectMeta.broadcastCount],
+        ["Date", projectMeta.date],
+    ];
 
-    // En-têtes du tableau
+    metaEntries.forEach(([key, value], index) => {
+        const titleCell = worksheet.getCell(`A${index + 1}`);
+        titleCell.value = `${key}:`;
+        titleCell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+        titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF6c8cb7" } };
+        titleCell.alignment = { horizontal: "left" };
+
+        const valueCell = worksheet.getCell(`B${index + 1}`);
+        valueCell.value = value || "Non spécifié";
+        valueCell.font = { color: { argb: "FFFFFFFF" } };
+        valueCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF6c8cb7" } };
+        valueCell.alignment = { horizontal: "left" };
+    });
+
+    worksheet.addRow([]);
+
+    // --- TITRE PRINCIPAL ---
+    const title = `Musiques Utilisées pour le projet ${projectMeta.show} - ${projectMeta.subject}`;
+    worksheet.mergeCells(`A${metaEntries.length + 2}:I${metaEntries.length + 2}`);
+    const titleCell = worksheet.getCell(`A${metaEntries.length + 2}`);
+    titleCell.value = title;
+    titleCell.font = { bold: true, size: 16, color: { argb: "FFFFFFFF" } };
+    titleCell.alignment = { horizontal: "center" };
+    titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF003366" } };
+
+    // --- EN-TÊTES ---
     const headers = ["Label", "Album Code", "Album Title", "Track Title", "Artist(s)", "Composer(s)", "TC IN", "TC OUT", "Durée"];
-    worksheet.addRow(headers).font = { bold: true };
+    const headerRow = worksheet.addRow(headers);
+    headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+    headerRow.alignment = { horizontal: "center", vertical: "middle" };
+    headerRow.height = 25;
 
-    // Parcours de chaque projet/fichier dans `globalOutputData`
+    headerRow.eachCell({ includeEmpty: false }, (cell) => {
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF6c8cb7" } };
+        cell.border = {
+            top: { style: "thin" },
+            left: { style: "thin" },
+            bottom: { style: "thin" },
+            right: { style: "thin" },
+        };
+    });
+
+    // --- DONNÉES ---
     globalOutputData.forEach((item) => {
-        // Ajout du titre du fichier en tant que section
-        worksheet.addRow([`Fichier : ${item.file}`]).font = { italic: true };
-
-        // Ajout des données de chaque track
         item.data.forEach((row) => {
-            // Récupère les données pour chaque colonne en s'assurant qu'elles correspondent à l'affichage HTML
-            worksheet.addRow([
+            const trackRow = worksheet.addRow([
                 row.label || "Inconnu",
                 row.albumCode || "Inconnu",
                 row.albumTitle || "Inconnu",
@@ -200,21 +273,52 @@ async function generateExcel(projectName) {
                 row.composers || "Inconnu",
                 row.tcin || "Inconnu",
                 row.tcout || "Inconnu",
-                row.duration || "Inconnu"
+                row.duration || "Inconnu",
             ]);
+
+            trackRow.eachCell((cell) => {
+                cell.border = {
+                    top: { style: "thin" },
+                    left: { style: "thin" },
+                    bottom: { style: "thin" },
+                    right: { style: "thin" },
+                };
+            });
         });
 
-        // Ajoute une ligne vide entre chaque fichier pour une meilleure lisibilité
         worksheet.addRow([]);
     });
 
-    // Génération et téléchargement du fichier Excel
+    // --- FOOTER ---
+    const footerMessage1 = "Document extrait de l'application PrimeTime Tracks";
+    const footerMessage2 = "Développée par Stéphane Mex - Contact : stephane.mex@lemanbleu.ch";
+
+    worksheet.addRow([]);
+
+    const footerRow1 = worksheet.addRow([footerMessage1]);
+    worksheet.mergeCells(`A${footerRow1.number}:H${footerRow1.number}`);
+    const footerCell1 = worksheet.getCell(`A${footerRow1.number}`);
+    footerCell1.font = { italic: true, color: { argb: "FF6c8cb7" } };
+    footerCell1.alignment = { horizontal: "center", vertical: "middle" };
+
+    const footerRow2 = worksheet.addRow([footerMessage2]);
+    worksheet.mergeCells(`A${footerRow2.number}:H${footerRow2.number}`);
+    const footerCell2 = worksheet.getCell(`A${footerRow2.number}`);
+    footerCell2.font = { italic: true, color: { argb: "FF6c8cb7" } };
+    footerCell2.alignment = { horizontal: "center", vertical: "middle" };
+
+    // --- TÉLÉCHARGEMENT ---
+    const formattedEmission = projectMeta.show.replace(/\s+/g, "_");
+    const formattedSubject = projectMeta.subject.replace(/\s+/g, "_");
+    const generationDate = new Date().toISOString().slice(0, 10);
+    const fileName = `Rapport_${formattedEmission}_${formattedSubject}_${generationDate}.xlsx`;
+
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${projectName}.xlsx`;
+    a.download = fileName; // Utilise le nouveau nom de fichier
     a.click();
     URL.revokeObjectURL(url);
 }
@@ -226,5 +330,13 @@ document.getElementById("process-btn").addEventListener("click", function () {
 });
 
 document.getElementById("download-btn").addEventListener("click", function () {
-    generateExcel("Projet en cours");
+    const projectMeta = getProjectMeta(); // Récupère les métadonnées
+
+    if (!projectMeta) {
+        console.error("Impossible de générer le fichier Excel sans métadonnées.");
+        return;
+    }
+
+    generateExcel("Projet en cours", projectMeta); // Passe les métadonnées à la fonction
 });
+

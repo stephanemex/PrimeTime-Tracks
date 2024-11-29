@@ -7,11 +7,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const mappingList = document.getElementById("mapping-list");
     const addMappingBtn = document.getElementById("add-mapping-btn");
 
-    // Supprime cette ligne, car importedCsvFiles est déjà globalement défini dans globals.js
-    // let importedCsvFiles = []; 
-
-    const diffusionMappings = {}; // Correspondances ajoutées
-
     // Affiche un message dans l'interface
     function showMessage(message, type = "info") {
         const messageContainer = document.getElementById("message");
@@ -180,6 +175,7 @@ document.addEventListener("DOMContentLoaded", function () {
             projectDate,
             csvRows: importedCsvFiles.flatMap(file => file.data), // Combine toutes les données CSV pour ce projet
         };
+        console.log("diffusionMappings après ajout :", diffusionMappings);
 
         updateMappingList();
         showMessage(`Correspondance ajoutée pour ${subject}`, "success");
